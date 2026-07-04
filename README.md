@@ -1,10 +1,10 @@
-# 🎾 Botonera de Pádel
+# 🎾 ScorePad
 
-App web para registrar un partido de pádel **punto por punto** desde el costado
-de la cancha: quién definió cada punto (winner, error forzado o no forzado),
-asistencias, marcador por sets, estadísticas en vivo y resumen exportable.
+Anotador de pádel **punto por punto**, para usar desde el costado de la cancha:
+quién definió cada punto (winner, error forzado o no forzado), asistencias,
+marcador por sets, estadísticas en vivo y resumen exportable.
 
-**Usala acá → https://gnrodo.github.io/botonera-padel/**
+**Usala acá → https://gnrodo.github.io/scorepad/**
 
 ## Características
 
