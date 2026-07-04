@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#f3f4ea">
+<meta name="color-scheme" content="light">
+<title>Botonera de Pádel · Planilla PDL-01</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f3f4ea;
+    --paper2:#e6e9d8;
+    --ink:#132f21;
+    --grass:#3c7d4e;
+    --ball:#e9c918;
+    --ball-ink:#8f7a00;
+    --clay:#b04a2b;
+    --line:3px;
+    --shadow:6px 6px 0 var(--ink);
+    --shadow-sm:4px 4px 0 var(--ink);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  html{background:var(--paper);}
+  body{
+    background-color:var(--paper);
+    background-image:repeating-linear-gradient(to bottom, transparent 0, transparent 27px, rgba(19,47,33,.045) 27px, rgba(19,47,33,.045) 28px);
+    color:var(--ink);
+    font-family:'Space Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size:15px; line-height:1.4;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    -webkit-user-select:none; user-select:none;
+    overscroll-behavior:none;
+    overflow-x:hidden;
+  }
+  input,textarea{ -webkit-user-select:text; user-select:text; }
+  .display{ font-family:'Anton', sans-serif; font-weight:400; text-transform:uppercase; }
+  .hidden{ display:none !important; }
+  ::selection{ background:var(--ball); color:var(--ink); }
+  ::-webkit-scrollbar{ width:12px; height:12px; }
+  ::-webkit-scrollbar-track{ background:var(--paper); }
+  ::-webkit-scrollbar-thumb{ background:var(--ink); border:3px solid var(--paper); }
+
+  .wrap{ max-width:540px; margin:0 auto; padding:14px 14px calc(28px + env(safe-area-inset-bottom)); }
+
+  /* ---------- Entrada: caída dura tipo sello ---------- */
+  @keyframes drop{
+    0%{ transform:translateY(-16px); opacity:0; }
+    100%{ transform:translateY(0); opacity:1; }
+  }
+  .drop{ animation:drop .3s steps(4,end) both; }
+
+  /* ---------- Marca de agua ---------- */
+  #setup{ position:relative; }
+  .watermark{
+    position:absolute; top:32%; left:50%;
+    transform:translate(-50%,-50%) rotate(-9deg);
+    font-size:34vw; letter-spacing:.02em; line-height:.8;
+    color:transparent; -webkit-text-stroke:2.5px rgba(19,47,33,.07);
+    z-index:0; pointer-events:none; white-space:nowrap;
+  }
+  #setup > *:not(.watermark){ position:relative; z-index:1; }
+
+  /* ---------- Barra superior / link variantes ---------- */
+  .topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:10px; }
+  .backlink{
+    font-weight:700; font-size:.72rem; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--ink); text-decoration:none; border-bottom:2px solid var(--grass); padding-bottom:2px;
+  }
+  .backlink:active{ color:var(--grass); }
+  .backlink:focus-visible{ outline:3px solid var(--grass); outline-offset:3px; }
+  .formcode{ font-size:.62rem; letter-spacing:.14em; color:rgba(19,47,33,.5); text-transform:uppercase; white-space:nowrap; }
+
+  /* ---------- Masthead ---------- */
+  .masthead{
+    border:var(--line) solid var(--ink); background:var(--ink); color:var(--paper);
+    padding:14px; box-shadow:var(--shadow); margin-bottom:20px;
+  }
+  .masthead h1{ font-family:'Anton'; font-weight:400; text-transform:uppercase; font-size:2.35rem; line-height:.92; letter-spacing:.01em; margin:0; }
+  .masthead .sub{ font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; color:var(--grass); margin-top:9px; }
+
+  /* ---------- Encabezados de sección ---------- */
+  .section{ margin-bottom:24px; }
+  .section-head{ display:flex; align-items:center; gap:10px; margin:0 0 14px; }
+  .section-head .n{ font-family:'Anton'; color:var(--grass); font-size:1.35rem; line-height:1; }
+  .section-head .t{ font-family:'Anton'; font-size:1.35rem; line-height:1; letter-spacing:.02em; text-transform:uppercase; }
+  .section-head .rule{ flex:1; height:0; border-top:var(--line) solid var(--ink); }
+
+  /* ---------- Tarjeta de pareja ---------- */
+  .pcard{ border:var(--line) solid var(--ink); background:var(--paper); box-shadow:var(--shadow); padding:12px; margin-bottom:16px; }
+  .pcard .pairtag{
+    display:flex; align-items:center; gap:8px; font-family:'Anton'; text-transform:uppercase;
+    font-size:1.05rem; letter-spacing:.03em; padding:5px 10px;
+    margin:-12px -12px 12px -12px; border-bottom:var(--line) solid var(--ink);
+  }
+  .pcard.A .pairtag{ background:var(--ink); color:var(--paper); }
+  .pcard.B .pairtag{ background:var(--ball); color:var(--ink); }
+  .pairtag .mono{ font-family:'Space Mono'; font-weight:700; font-size:.6rem; letter-spacing:.14em; margin-left:auto; opacity:.75; }
+
+  .field{ margin-bottom:10px; }
+  .field:last-child{ margin-bottom:0; }
+  .lbl{ display:block; font-size:.6rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--ink); margin-bottom:5px; }
+  input[type=text]{
+    width:100%; background:var(--paper); color:var(--ink);
+    border:var(--line) solid var(--ink); border-radius:0;
+    padding:12px; font-family:'Space Mono', monospace; font-weight:700; font-size:1rem;
+    text-transform:uppercase;
+  }
+  input[type=text]::placeholder{ color:rgba(19,47,33,.32); text-transform:none; font-weight:400; }
+  input[type=text]:focus{ outline:none; box-shadow:var(--shadow-sm); }
+  .prow{ display:grid; grid-template-columns:1.5fr 1fr; gap:10px; }
+  .prow + .prow{ margin-top:10px; }
+
+  /* ---------- Botones base (feedback de sello) ---------- */
+  button{
+    font-family:'Space Mono', monospace; color:var(--ink); background:var(--paper);
+    border:var(--line) solid var(--ink); border-radius:0;
+    font-weight:700; cursor:pointer; -webkit-appearance:none; appearance:none;
+    box-shadow:var(--shadow);
+    transition:transform .05s ease, box-shadow .05s ease, background .05s ease, color .05s ease;
+    display:inline-flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; line-height:1.1; text-transform:uppercase; letter-spacing:.02em;
+  }
+  button:active{ transform:translate(6px,6px); box-shadow:0 0 0 var(--ink); }
+  button:focus-visible{ outline:3px solid var(--grass); outline-offset:3px; }
+  button:disabled{ box-shadow:none; opacity:.35; cursor:not-allowed; }
+  button:disabled:active{ transform:none; box-shadow:none; }
+  .btn-xl{ min-height:66px; font-size:1.05rem; width:100%; }
+  .btn-l{ min-height:60px; font-size:.92rem; }
+
+  /* ---------- Formato ---------- */
+  .seg{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .seg button{ min-height:56px; font-family:'Anton'; font-size:1.05rem; letter-spacing:.03em; }
+  .seg button.on{ background:var(--ink); color:var(--paper); }
+  .fmthelp{ font-size:.66rem; color:rgba(19,47,33,.65); margin:8px 2px 16px; line-height:1.45; text-transform:none; }
+  .hint{ font-size:.66rem; color:rgba(19,47,33,.6); margin:0 2px 12px; line-height:1.45; }
+
+  /* ---------- Toggles ---------- */
+  .toggle{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    border:var(--line) solid var(--ink); background:var(--paper); box-shadow:var(--shadow);
+    padding:12px; margin-bottom:14px;
+  }
+  .toggle .t-label{ font-family:'Anton'; text-transform:uppercase; font-size:1rem; letter-spacing:.02em; }
+  .toggle .t-sub{ font-size:.64rem; color:rgba(19,47,33,.62); margin-top:4px; line-height:1.35; text-transform:none; }
+  .tsw{ position:relative; width:64px; height:34px; flex:0 0 auto; border:var(--line) solid var(--ink); background:var(--paper); }
+  .tsw input{ position:absolute; inset:0; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; }
+  .tsw .knob{ position:absolute; top:0; left:0; width:28px; height:100%; background:var(--ink); transition:transform .09s steps(2,end), background .09s; }
+  .tsw input:checked + .knob{ transform:translateX(30px); background:var(--grass); }
+
+  /* ---------- CTA principal ---------- */
+  .btn-primary{ background:var(--ink); color:var(--paper); font-family:'Anton'; font-size:1.45rem; letter-spacing:.03em; min-height:74px; flex-direction:row; gap:12px; }
+  .btn-primary .mk{ color:var(--ball); }
+  .b-finish2{ background:var(--paper); font-family:'Anton'; font-size:1.05rem; letter-spacing:.03em; }
+
+  .formfoot{ margin-top:24px; padding-top:12px; border-top:var(--line) solid var(--ink); display:flex; justify-content:space-between; gap:8px; font-size:.6rem; letter-spacing:.12em; text-transform:uppercase; color:rgba(19,47,33,.55); }
+
+  /* ============================ PARTIDO ============================ */
+  .banner{
+    border:var(--line) solid var(--ink); background:var(--ball); color:var(--ink);
+    box-shadow:var(--shadow); text-align:center; padding:16px 14px; margin-bottom:16px;
+    transform:rotate(-1.2deg);
+  }
+  .banner .ban-k{ font-family:'Space Mono'; font-weight:700; font-size:.64rem; letter-spacing:.32em; text-transform:uppercase; }
+  .banner .ban-t{ font-family:'Anton'; text-transform:uppercase; font-size:1.85rem; line-height:1; margin-top:5px; }
+  .banner .ban-n{ font-family:'Space Mono'; font-weight:700; font-size:.72rem; letter-spacing:.04em; text-transform:uppercase; margin-top:7px; }
+
+  /* ---------- Marcador (héroe) ---------- */
+  .board{ border:var(--line) solid var(--ink); background:var(--paper); box-shadow:var(--shadow); margin-bottom:16px; }
+  .board table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  .board col.c-team{ width:32%; }
+  .board col.c-pt{ width:22%; }
+  .board th{
+    font-family:'Space Mono', monospace; font-weight:700; font-size:.56rem; letter-spacing:.06em;
+    text-transform:uppercase; background:var(--ink); color:var(--paper);
+    padding:7px 3px; text-align:center; border:var(--line) solid var(--ink); white-space:normal; line-height:1.1;
+  }
+  .board th.teamh{ text-align:left; padding-left:10px; }
+  .board td{ font-family:'Anton'; text-align:center; padding:8px 3px; border:var(--line) solid var(--ink); background:var(--paper); }
+  .board td.team{
+    font-family:'Space Mono', monospace; font-weight:700; text-transform:uppercase; text-align:left;
+    padding-left:10px; font-size:.8rem; line-height:1.15; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .board td.team .srv{ color:var(--grass); font-weight:700; margin-right:5px; visibility:hidden; }
+  .board td.team.serving .srv{ visibility:visible; }
+  .board td.set{ font-size:1.7rem; color:rgba(19,47,33,.38); }
+  .board td.set.won{ background:var(--ink); color:var(--paper); }
+  .board td.set.cur{ font-size:2.3rem; color:var(--ink); }
+  .board td.pts{ font-size:2.5rem; color:var(--ink); }
+  .setline{
+    background:var(--ink); color:var(--paper); font-size:.64rem; letter-spacing:.06em; text-transform:uppercase;
+    padding:8px 10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-height:34px;
+  }
+  .tbtag{
+    display:inline-block; background:var(--ball); color:var(--ink); font-family:'Anton'; font-size:.72rem;
+    letter-spacing:.05em; padding:3px 9px; border:2px solid var(--paper); transform:rotate(-2deg); text-transform:uppercase;
+  }
+
+  /* ---------- Zona de carga ---------- */
+  .serveprompt{ border:var(--line) solid var(--ink); background:var(--paper); box-shadow:var(--shadow); padding:12px; margin-bottom:16px; }
+  .serveprompt .lbl{ margin-bottom:9px; }
+  .servegrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .servegrid button{ min-height:54px; font-family:'Anton'; font-size:1.05rem; letter-spacing:.02em; }
+
+  .stepq{ font-family:'Anton'; text-transform:uppercase; text-align:center; font-size:1.18rem; letter-spacing:.02em; margin:6px 0 14px; min-height:1.2em; line-height:1.1; }
+
+  .grid-players{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .span2{ grid-column:1 / -1; }
+  .pbtn{ min-height:78px; padding:8px; }
+  .pbtn .pname{ font-family:'Anton'; font-size:1.5rem; line-height:1; letter-spacing:.02em; }
+  .pbtn .pcat{ font-family:'Space Mono'; font-size:.58rem; font-weight:700; letter-spacing:.06em; margin-top:6px; text-transform:uppercase; opacity:.85; }
+  .pbtn.tA{ background:var(--ink); color:var(--paper); }
+  .pbtn.tB{ background:var(--ball); color:var(--ink); }
+
+  .stack{ display:flex; flex-direction:column; gap:12px; }
+  .actbtn{ flex-direction:row; align-items:center; justify-content:flex-start; gap:14px; min-height:74px; padding:0 16px; text-align:left; }
+  .actbtn .acode{ font-family:'Anton'; font-size:2.2rem; line-height:1; min-width:54px; text-align:center; }
+  .actbtn .atext{ display:flex; flex-direction:column; align-items:flex-start; }
+  .actbtn .atitle{ font-family:'Anton'; font-size:1.28rem; letter-spacing:.02em; line-height:1; }
+  .actbtn .asub{ font-family:'Space Mono'; font-size:.62rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; opacity:.82; margin-top:5px; }
+  .act-win{ background:var(--grass); color:var(--paper); }
+  .act-ef{ background:var(--paper); color:var(--ink); }
+  .act-ue{ background:var(--clay); color:var(--paper); }
+  .b-none{ background:var(--paper); min-height:72px; font-family:'Anton'; font-size:1.1rem; letter-spacing:.02em; }
+  .backbtn{ min-height:52px; font-size:.82rem; background:var(--paper); }
+
+  .controls{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
+  .b-undo{ background:var(--paper); font-family:'Anton'; font-size:1rem; letter-spacing:.02em; }
+  .b-finish{ background:var(--paper); font-family:'Anton'; font-size:1rem; letter-spacing:.02em; }
+
+  /* ---------- Estadísticas ---------- */
+  details.stats{ border:var(--line) solid var(--ink); background:var(--paper); box-shadow:var(--shadow); margin-top:16px; }
+  details.stats summary{
+    font-family:'Anton'; text-transform:uppercase; font-size:1rem; letter-spacing:.03em;
+    padding:12px 14px; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center;
+  }
+  details.stats summary::-webkit-details-marker{ display:none; }
+  details.stats[open] summary{ background:var(--ink); color:var(--paper); }
+  details.stats summary .chev{ transition:transform .1s steps(2,end); }
+  details.stats[open] summary .chev{ transform:rotate(180deg); }
+  .stats table{ width:100%; border-collapse:collapse; font-family:'Space Mono'; }
+  .stats th{ font-size:.55rem; letter-spacing:.05em; text-transform:uppercase; color:rgba(19,47,33,.6); padding:9px 4px; border-bottom:var(--line) solid var(--ink); font-weight:700; }
+  .stats th.l{ text-align:left; padding-left:12px; }
+  .stats td{ text-align:center; padding:9px 4px; font-weight:700; font-size:.85rem; border-bottom:2px solid rgba(19,47,33,.14); }
+  .stats td.name{ text-align:left; font-family:'Anton'; text-transform:uppercase; font-size:.95rem; letter-spacing:.02em; padding-left:12px; }
+  .stats tr.tA td.name{ color:var(--ink); }
+  .stats tr.tB td.name{ color:var(--ball-ink); }
+  .stats td.score{ font-family:'Anton'; font-size:1.1rem; }
+  .stats .note{ font-size:.6rem; color:rgba(19,47,33,.6); padding:9px 12px 13px; line-height:1.45; text-transform:none; }
+
+  /* ---------- Ventanas (resumen / confirmar) ---------- */
+  .overlay{ position:fixed; inset:0; background:rgba(19,47,33,.55); display:flex; align-items:flex-start; justify-content:center; padding:16px; overflow:auto; z-index:50; }
+  .window{ background:var(--paper); border:var(--line) solid var(--ink); box-shadow:10px 10px 0 rgba(19,47,33,.9); width:100%; max-width:520px; margin:auto; }
+  .win-bar{ background:var(--ink); color:var(--paper); display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 12px; font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; }
+  .win-bar .dots{ display:flex; gap:6px; flex:0 0 auto; }
+  .win-bar .dots i{ width:12px; height:12px; border:2px solid var(--paper); display:block; }
+  .win-body{ padding:14px; }
+  .win-title{ font-family:'Anton'; text-transform:uppercase; font-size:1.45rem; letter-spacing:.02em; margin:0 0 12px; line-height:1; }
+  textarea{
+    width:100%; min-height:200px; background:var(--paper2); color:var(--ink);
+    border:var(--line) solid var(--ink); border-radius:0; padding:12px;
+    font-family:'Space Mono', monospace; font-size:.78rem; line-height:1.55; resize:vertical;
+  }
+  textarea:focus{ outline:none; box-shadow:var(--shadow-sm); }
+  .b-copy{ background:var(--ink); color:var(--paper); font-family:'Anton'; font-size:1rem; letter-spacing:.02em; }
+  .b-back2{ background:var(--paper); font-family:'Anton'; font-size:1rem; letter-spacing:.02em; }
+  .b-new{ background:var(--paper); border-style:dashed; }
+  .confirm-msg{ font-family:'Anton'; text-transform:uppercase; font-size:1.35rem; line-height:1.1; margin:0; }
+  .confirm-sub{ display:block; font-family:'Space Mono'; font-weight:700; font-size:.66rem; letter-spacing:.04em; color:rgba(19,47,33,.6); margin-top:9px; text-transform:none; }
+  .b-cancel{ background:var(--paper); font-family:'Anton'; font-size:1rem; letter-spacing:.02em; }
+  .b-danger{ background:var(--clay); color:var(--paper); font-family:'Anton'; font-size:1rem; letter-spacing:.02em; }
+
+  /* ---------- Archivo de partidos (persistencia local) ---------- */
+  .sv-item{ border:var(--line) solid var(--ink); background:var(--paper); box-shadow:var(--shadow-sm); padding:10px 12px; margin-bottom:12px; }
+  .sv-top{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  .sv-names{ font-family:'Anton'; text-transform:uppercase; font-size:1rem; line-height:1.15; letter-spacing:.02em; }
+  .sv-date{ font-size:.6rem; letter-spacing:.08em; text-transform:uppercase; color:rgba(19,47,33,.55); white-space:nowrap; }
+  .sv-line{ font-family:'Space Mono'; font-weight:700; font-size:.68rem; letter-spacing:.04em; text-transform:uppercase; margin-top:5px; }
+  .sv-line .sv-st{ display:inline-block; padding:1px 7px; border:2px solid var(--ink); margin-right:7px; }
+  .sv-line .sv-st.fin{ background:var(--ball); }
+  .sv-line .sv-st.live{ background:var(--grass); color:var(--paper); border-color:var(--ink); }
+  .sv-actions{ display:grid; grid-template-columns:1fr auto; gap:10px; margin-top:10px; }
+  .sv-actions button{ min-height:46px; font-family:'Anton'; font-size:.9rem; letter-spacing:.03em; }
+  .sv-open{ background:var(--ink); color:var(--paper); }
+  .sv-del{ background:var(--paper); color:var(--clay); border-color:var(--clay) !important; box-shadow:4px 4px 0 var(--clay) !important; padding:0 14px; }
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom));
+    transform:translateX(-50%) rotate(-1.4deg);
+    background:var(--ink); color:var(--paper); border:var(--line) solid var(--ball);
+    font-weight:700; font-size:.8rem; letter-spacing:.04em; text-transform:uppercase;
+    padding:12px 20px; z-index:99; box-shadow:5px 5px 0 var(--ball);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ SETUP ============ -->
+  <section id="setup">
+    <div class="watermark display">PÁDEL</div>
+
+    <div class="topbar">
+      <span class="formcode">Registro punto a punto</span>
+      <span class="formcode">Form PDL-01</span>
+    </div>
+
+    <div class="masthead drop" style="animation-delay:.03s">
+      <h1>Botonera<br>de Pádel</h1>
+      <div class="sub">Planilla de partido · punto por punto</div>
+    </div>
+
+    <div class="section drop" style="animation-delay:.09s">
+      <div class="section-head"><span class="n">01</span><span class="t">Parejas</span><span class="rule"></span></div>
+
+      <div class="pcard A">
+        <div class="pairtag">Pareja A <span class="mono">Índices 0 · 1</span></div>
+        <div class="prow">
+          <div class="field">
+            <label class="lbl" for="p0">Jugador 1</label>
+            <input type="text" id="p0" placeholder="Nombre" autocomplete="off" value="RODO">
+          </div>
+          <div class="field">
+            <label class="lbl" for="c0">Cat.</label>
+            <input type="text" id="c0" placeholder="Opcional" autocomplete="off">
+          </div>
+        </div>
+        <div class="prow">
+          <div class="field">
+            <label class="lbl" for="p1">Jugador 2</label>
+            <input type="text" id="p1" placeholder="Nombre" autocomplete="off" value="NACHO">
+          </div>
+          <div class="field">
+            <label class="lbl" for="c1">Cat.</label>
+            <input type="text" id="c1" placeholder="Opcional" autocomplete="off">
+          </div>
+        </div>
+      </div>
+
+      <div class="pcard B">
+        <div class="pairtag">Pareja B <span class="mono">Índices 2 · 3</span></div>
+        <div class="prow">
+          <div class="field">
+            <label class="lbl" for="p2">Jugador 3</label>
+            <input type="text" id="p2" placeholder="Nombre" autocomplete="off" value="SEBA">
+          </div>
+          <div class="field">
+            <label class="lbl" for="c2">Cat.</label>
+            <input type="text" id="c2" placeholder="Opcional" autocomplete="off">
+          </div>
+        </div>
+        <div class="prow">
+          <div class="field">
+            <label class="lbl" for="p3">Jugador 4</label>
+            <input type="text" id="p3" placeholder="Nombre" autocomplete="off" value="MARTIN">
+          </div>
+          <div class="field">
+            <label class="lbl" for="c3">Cat.</label>
+            <input type="text" id="c3" placeholder="Opcional" autocomplete="off">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section drop" style="animation-delay:.15s">
+      <div class="section-head"><span class="n">02</span><span class="t">Formato</span><span class="rule"></span></div>
+
+      <div class="seg" id="formatSeg">
+        <button data-fmt="3sets" class="on">Mejor de 3</button>
+        <button data-fmt="1set">A 1 set</button>
+      </div>
+      <p class="fmthelp" id="fmtHelp"></p>
+
+      <div class="toggle">
+        <div>
+          <div class="t-label">Punto de oro</div>
+          <div class="t-sub">Sin ventajas: al 40-40 el próximo punto define el game.</div>
+        </div>
+        <label class="tsw"><input type="checkbox" id="golden" checked><span class="knob"></span></label>
+      </div>
+
+      <div class="toggle">
+        <div>
+          <div class="t-label">Súper tie-break decisivo</div>
+          <div class="t-sub">El set decisivo se juega como súper tie-break a 11 (dif. 2).</div>
+        </div>
+        <label class="tsw"><input type="checkbox" id="superTB"><span class="knob"></span></label>
+      </div>
+
+      <p class="hint">El saque se configura en la cancha: la app pregunta quién saca en el primer turno de cada pareja.</p>
+    </div>
+
+    <div class="drop" style="animation-delay:.21s">
+      <button class="btn-xl btn-primary" id="startBtn">Empezar partido <span class="mk">▶</span></button>
+    </div>
+
+    <div class="section drop" style="animation-delay:.27s; margin-top:22px;">
+      <div class="section-head"><span class="n">03</span><span class="t">Retomar</span><span class="rule"></span></div>
+      <p class="hint">Pegá el texto copiado de un partido (tiene que incluir la línea <b>PADEL1:</b>…) y se reconstruye punto por punto para continuarlo.</p>
+      <textarea id="resumeText" placeholder="Pegá acá el resumen copiado…" style="min-height:96px"></textarea>
+      <button class="btn-l b-finish2" id="resumeBtn" style="width:100%; margin-top:10px">⏯ Retomar partido</button>
+    </div>
+
+    <div class="section drop hidden" id="savedCard" style="animation-delay:.33s; margin-top:22px;">
+      <div class="section-head"><span class="n">04</span><span class="t">Archivo</span><span class="rule"></span></div>
+      <p class="hint">Partidos guardados en este dispositivo. Se anotan solos, punto por punto.</p>
+      <div id="savedList"></div>
+    </div>
+
+    <div class="formfoot">
+      <span>Rev. 2026</span>
+      <span>Form PDL-01 · Pádel Scoring</span>
+    </div>
+  </section>
+
+  <!-- ============ PARTIDO ============ -->
+  <section id="match" class="hidden">
+    <div class="topbar">
+      <span class="formcode">Registro en cancha</span>
+      <span class="formcode">Form PDL-01</span>
+    </div>
+
+    <div id="finishBanner" class="banner hidden"></div>
+
+    <!-- marcador -->
+    <div class="board">
+      <table id="boardTable"></table>
+      <div class="setline"><span id="setLine"></span></div>
+    </div>
+
+    <!-- configuración de saque en cancha -->
+    <div id="servePrompt" class="serveprompt hidden">
+      <label class="lbl" id="servePromptLbl">¿Quién saca primero?</label>
+      <div class="seg servegrid" id="servePromptSeg"></div>
+    </div>
+
+    <!-- pregunta / paso -->
+    <div class="stepq" id="stepQ">¿Quién definió el punto?</div>
+
+    <!-- paso 1: jugadores -->
+    <div id="stepPlayers" class="grid-players"></div>
+
+    <!-- paso 2: acción -->
+    <div id="stepAction" class="stack hidden"></div>
+
+    <!-- paso 3: asistencia -->
+    <div id="stepAssist" class="stack hidden"></div>
+
+    <!-- controles -->
+    <div class="controls">
+      <button class="btn-l b-undo" id="undoBtn" disabled>↩ Deshacer</button>
+      <button class="btn-l b-finish" id="finishBtn">🏁 Finalizar</button>
+    </div>
+
+    <!-- stats colapsable -->
+    <details class="stats" id="statsPanel" open>
+      <summary>Estadísticas en vivo <span class="chev">▾</span></summary>
+      <table>
+        <thead>
+          <tr><th class="l">Jugador</th><th>W</th><th>A</th><th>EF</th><th>UE</th><th>FW</th><th>Score</th></tr>
+        </thead>
+        <tbody id="statsBody"></tbody>
+      </table>
+      <p class="note">Score = 2·W + 1·A − 1·EF − 2·UE. FW = error forzado que regaló un winner rival (no afecta el score).</p>
+    </details>
+  </section>
+
+</div>
+
+<!-- ============ RESUMEN / EXPORT ============ -->
+<div id="summaryOverlay" class="overlay hidden">
+  <div class="window">
+    <div class="win-bar"><span>Resumen · Form PDL-01</span><span class="dots"><i></i><i></i></span></div>
+    <div class="win-body">
+      <h2 class="win-title" id="summaryTitle">Resumen del partido</h2>
+      <textarea id="exportText" readonly></textarea>
+      <div class="controls" style="margin-top:14px">
+        <button class="btn-l b-copy" id="copyBtn">📋 Copiar texto</button>
+        <button class="btn-l b-back2" id="closeSummary">Volver</button>
+      </div>
+      <button class="btn-l b-new" id="newMatchBtn" style="width:100%; margin-top:12px">Nuevo partido</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CONFIRMACIÓN ============ -->
+<div id="confirmOverlay" class="overlay hidden">
+  <div class="window" style="max-width:420px">
+    <div class="win-bar"><span>Confirmar acción</span><span class="dots"><i></i><i></i></span></div>
+    <div class="win-body">
+      <p class="confirm-msg"><span id="confirmMsg">¿Empezar un partido nuevo?</span><span class="confirm-sub" id="confirmSub">El partido actual queda guardado en el archivo.</span></p>
+      <div class="controls" style="margin-top:16px">
+        <button class="btn-l b-cancel" id="confirmCancel">Cancelar</button>
+        <button class="btn-l b-danger" id="confirmYes">Sí, nuevo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="store.js"></script>
+<script>
+"use strict";
+/* =========================================================================
+   Botonera de Pádel — registro punto por punto con asistencias.
+   Todo el estado vive en memoria (no usa localStorage).
+   ========================================================================= */
+
+const $ = (id) => document.getElementById(id);
+
+/* ---------- Estado global ---------- */
+let cfg = null;   // configuración del partido
+let M = null;     // estado vivo del partido
+let history = []; // pila de snapshots para Deshacer
+let matchId = null; // id del partido en el archivo local (PadelStore)
+
+/* pareja y compañero de cada índice de jugador (0,1 = A; 2,3 = B) */
+const pairOfIdx = (i) => (i < 2 ? 0 : 1);
+const partnerOf = (i) => (i ^ 1);
+
+const FMT_HELP = {
+  "3sets": "Al mejor de 3 sets (el primero en ganar 2). El set decisivo puede ser súper tie-break según el toggle.",
+  "1set": "Un solo set (a 6 games con diferencia de 2; 6-6 va a tie-break)."
+};
+
+/* =========================================================================
+   SETUP
+   ========================================================================= */
+let selectedFormat = "3sets";
+
+$("formatSeg").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  [...$("formatSeg").children].forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  selectedFormat = b.dataset.fmt;
+  $("fmtHelp").textContent = FMT_HELP[selectedFormat];
+});
+$("fmtHelp").textContent = FMT_HELP["3sets"];
+
+$("startBtn").addEventListener("click", startMatch);
+
+function startMatch() {
+  const names = [];
+  for (let i = 0; i < 4; i++) {
+    names.push($("p" + i).value.trim() || ("Jugador " + (i + 1)));
+  }
+  const cats = [];
+  for (let i = 0; i < 4; i++) cats.push($("c" + i).value.trim());
+
+  cfg = {
+    names, cats,
+    pairs: [[0, 1], [2, 3]],       // índices por pareja
+    pairOf: [0, 0, 1, 1],          // pareja de cada jugador
+    format: selectedFormat,
+    golden: $("golden").checked,
+    superTB: $("superTB").checked,
+    // el orden de saque se define en cancha: se pregunta en el primer
+    // turno de saque de cada pareja y los compañeros completan el anillo
+    serveRing: [null, null, null, null],
+  };
+
+  initMatchState();
+  matchId = (window.PadelStore && PadelStore.ok) ? PadelStore.newId() : null;
+  saveCurrent();
+  enterMatchScreen();
+}
+
+function initMatchState() {
+  M = {
+    pts: [0, 0],           // puntos del game (0..4 => 0/15/30/40/AD) o puntos de TB
+    games: [0, 0],
+    sets: [0, 0],          // sets ganados
+    setHistory: [],        // sets cerrados: {a,b,tb:bool}
+    inTB: false,
+    tbTarget: 7,
+    tbIsDecider: false,    // true si el TB es el set decisivo completo
+    ringIdx: 0,
+    stats: [ {W:0,A:0,EF:0,UE:0,FW:0}, {W:0,A:0,EF:0,UE:0,FW:0}, {W:0,A:0,EF:0,UE:0,FW:0}, {W:0,A:0,EF:0,UE:0,FW:0} ],
+    seq: [ [], [], [], [] ], // secuencia de tokens por jugador (orden real de carga)
+    log: [],               // registro global de puntos [jugador, acción, asistente, tipo] para retomar
+    finished: false,
+  };
+  history = [];
+  maybeStartDeciderTB(); // por si algún formato empieza directo en TB (no ocurre en v1)
+}
+
+function enterMatchScreen() {
+  $("setup").classList.add("hidden");
+  $("match").classList.remove("hidden");
+  $("finishBanner").classList.add("hidden");
+  renderBoard();
+  renderStats();
+  updateUndoBtn();
+  if (M.finished) { showFinishBanner(); gotoStep(0); }
+  else gotoStep(1);
+  window.scrollTo(0, 0);
+}
+
+/* =========================================================================
+   FLUJO DE CARGA DE UN PUNTO
+   ========================================================================= */
+let ui = { step: 1, player: null, action: null };
+
+function gotoStep(n) {
+  ui.step = n;
+  $("stepPlayers").classList.toggle("hidden", n !== 1);
+  $("stepAction").classList.toggle("hidden", n !== 2);
+  $("stepAssist").classList.toggle("hidden", n !== 3);
+
+  if (M.finished) {
+    $("stepQ").textContent = "Partido finalizado";
+    $("stepPlayers").classList.add("hidden");
+    $("stepAction").classList.add("hidden");
+    $("stepAssist").classList.add("hidden");
+    return;
+  }
+
+  if (n === 1) {
+    ui.player = null; ui.action = null;
+    $("stepQ").textContent = "¿Quién definió el punto?";
+    renderPlayers();
+  } else if (n === 2) {
+    $("stepQ").textContent = "¿Cómo definió " + cfg.names[ui.player] + "?";
+    renderActions();
+  } else if (n === 3) {
+    renderAssist();
+  }
+}
+
+function renderPlayers() {
+  const c = $("stepPlayers");
+  c.innerHTML = "";
+  for (let i = 0; i < 4; i++) {
+    const b = document.createElement("button");
+    b.className = "btn-xl pbtn " + (cfg.pairOf[i] === 0 ? "tA" : "tB");
+    b.innerHTML = '<span class="pname">' + esc(cfg.names[i]) + '</span>' +
+                  (cfg.cats[i] ? '<span class="pcat">' + esc(cfg.cats[i]) + '</span>' : '');
+    b.addEventListener("click", () => { ui.player = i; gotoStep(2); });
+    c.appendChild(b);
+  }
+}
+
+function renderActions() {
+  const c = $("stepAction");
+  c.innerHTML = "";
+  const acts = [
+    {k:"W",  cls:"act-win", code:"W",  title:"Winner",           sub:"Tiro ganador · +2"},
+    {k:"EF", cls:"act-ef",  code:"EF", title:"Error forzado",    sub:"Erró presionado · −1"},
+    {k:"UE", cls:"act-ue",  code:"UE", title:"Error no forzado", sub:"Lo regaló · −2"},
+  ];
+  acts.forEach(a => {
+    const b = document.createElement("button");
+    b.className = "btn-xl actbtn " + a.cls;
+    b.innerHTML = '<span class="acode">' + a.code + '</span>' +
+                  '<span class="atext"><span class="atitle">' + a.title + '</span>' +
+                  '<span class="asub">' + a.sub + '</span></span>';
+    b.addEventListener("click", () => chooseAction(a.k));
+    c.appendChild(b);
+  });
+  const back = document.createElement("button");
+  back.className = "btn-l backbtn";
+  back.textContent = "‹ Volver";
+  back.addEventListener("click", () => gotoStep(1));
+  c.appendChild(back);
+}
+
+function chooseAction(k) {
+  ui.action = k;
+  if (k === "W") {           // contexto: asistencia del compañero o error forzado del rival
+    gotoStep(3);
+  } else if (k === "EF") {   // asistencia = quién provocó (pareja rival)
+    gotoStep(3);
+  } else {                   // UE: sin asistencia, registra directo
+    commitPoint(ui.player, "UE", null, null);
+  }
+}
+
+function renderAssist() {
+  const c = $("stepAssist");
+  c.innerHTML = "";
+  c.className = "grid-players";
+  let candidates = []; // {p, kind, sub}
+  if (ui.action === "W") {
+    $("stepQ").textContent = "¿Cómo se generó el winner?";
+    const partner = cfg.pairs[cfg.pairOf[ui.player]].find(p => p !== ui.player);
+    candidates.push({ p: partner, kind: "A", sub: "+1 asistencia" });
+    // error forzado del rival que dejó la pelota fácil (ej: globo corto); no afecta el score
+    const rivalPair = 1 - cfg.pairOf[ui.player];
+    cfg.pairs[rivalPair].forEach(p =>
+      candidates.push({ p, kind: "FW", sub: "La dejó fácil (no resta)" }));
+  } else if (ui.action === "EF") {
+    $("stepQ").textContent = "¿Quién provocó el error forzado?";
+    const rivalPair = 1 - cfg.pairOf[ui.player];
+    cfg.pairs[rivalPair].forEach(p =>
+      candidates.push({ p, kind: "A", sub: "+1 asistencia" }));
+  }
+  candidates.forEach(cand => {
+    const b = document.createElement("button");
+    b.className = "btn-xl pbtn " + (cfg.pairOf[cand.p] === 0 ? "tA" : "tB");
+    b.innerHTML = '<span class="pname">' + esc(cfg.names[cand.p]) + '</span><span class="pcat">' + cand.sub + '</span>';
+    b.addEventListener("click", () => commitPoint(ui.player, ui.action, cand.p, cand.kind));
+    c.appendChild(b);
+  });
+  const none = document.createElement("button");
+  none.className = "btn-xl b-none" + (candidates.length % 2 === 0 ? " span2" : "");
+  none.textContent = "Sin asistencia";
+  none.addEventListener("click", () => commitPoint(ui.player, ui.action, null, null));
+  c.appendChild(none);
+
+  const back = document.createElement("button");
+  back.className = "btn-l backbtn span2";
+  back.textContent = "‹ Volver";
+  back.addEventListener("click", () => gotoStep(2));
+  c.appendChild(back);
+}
+
+/* =========================================================================
+   REGISTRO + MARCADOR
+   ========================================================================= */
+/* aplica un punto al estado (sin renderizar); assistKind: "A" asistencia real (+1)
+   o "FW" error forzado del rival que regaló el winner (solo registro, no afecta score) */
+function applyPoint(player, action, assistPlayer, assistKind) {
+  pushSnapshot();
+
+  // 1) stats + secuencia del jugador que definió
+  M.stats[player][action] += 1;
+  M.seq[player].push(action);
+
+  // 2) asistencia / contexto (token separado, orden real de carga)
+  if (assistPlayer != null) {
+    const kind = assistKind || "A";
+    M.stats[assistPlayer][kind] += 1;
+    M.seq[assistPlayer].push(kind);
+  }
+
+  // 3) registro global para poder retomar el partido
+  //    [jugador, acción, asistente, tipo, set, game, tb(0/1/2)] — los últimos
+  //    tres anotan dónde ocurrió el punto para la secuencia legible
+  const setNo = M.setHistory.length + 1;
+  const gameNo = M.games[0] + M.games[1] + 1;
+  const tbFlag = M.inTB ? (M.tbIsDecider ? 2 : 1) : 0;
+  M.log.push([player, action, assistPlayer, assistKind || null, setNo, gameNo, tbFlag]);
+
+  // 4) a qué pareja va el punto
+  //    W -> pareja del que definió ; UE/EF -> pareja rival
+  const winnerPair = (action === "W") ? cfg.pairOf[player] : (1 - cfg.pairOf[player]);
+  awardPoint(winnerPair);
+}
+
+function commitPoint(player, action, assistPlayer, assistKind) {
+  applyPoint(player, action, assistPlayer, assistKind);
+  saveCurrent();
+
+  renderBoard();
+  renderStats();
+  updateUndoBtn();
+
+  if (M.finished) {
+    showFinishBanner();
+    gotoStep(0);
+  } else {
+    gotoStep(1);
+  }
+}
+
+function awardPoint(w) {
+  const l = 1 - w;
+  if (M.inTB) {
+    M.pts[w] += 1;
+    if (M.pts[w] >= M.tbTarget && M.pts[w] - M.pts[l] >= 2) {
+      winTiebreak(w);
+    }
+    return;
+  }
+  // juego normal
+  if (cfg.golden) {
+    // sin ventajas: llegar más allá de 40 (índice 4) gana, incluido el punto de oro a 40-40
+    M.pts[w] += 1;
+    if (M.pts[w] >= 4) winGame(w);
+  } else {
+    M.pts[w] += 1;
+    if (M.pts[w] >= 4 && M.pts[w] - M.pts[l] >= 2) {
+      winGame(w);
+    } else if (M.pts[w] === 4 && M.pts[l] === 4) {
+      // volver a deuce (40-40)
+      M.pts[w] = 3; M.pts[l] = 3;
+    }
+  }
+}
+
+function winGame(w) {
+  M.games[w] += 1;
+  M.pts = [0, 0];
+  advanceServer();
+  checkSet(w);
+}
+
+function winTiebreak(w) {
+  const l = 1 - w;
+  if (M.tbIsDecider) {
+    // el súper tie-break ES el set decisivo
+    M.setHistory.push({ a: M.pts[0], b: M.pts[1], tb: true });
+    M.sets[w] += 1;
+  } else {
+    // tie-break normal de 6-6: cierra el set 7-6
+    M.games[w] += 1; // 7
+    M.setHistory.push({ a: M.games[0], b: M.games[1], tb: true });
+    M.sets[w] += 1;
+  }
+  M.pts = [0, 0];
+  M.games = [0, 0];
+  M.inTB = false;
+  M.tbIsDecider = false;
+  advanceServer();
+  checkMatchOrNextSet(w);
+}
+
+function checkSet(w) {
+  const l = 1 - w;
+  if (M.games[w] >= 6 && M.games[w] - M.games[l] >= 2) {
+    // set cerrado por games
+    M.setHistory.push({ a: M.games[0], b: M.games[1], tb: false });
+    M.sets[w] += 1;
+    M.games = [0, 0];
+    checkMatchOrNextSet(w);
+  } else if (M.games[0] === 6 && M.games[1] === 6) {
+    // 6-6 -> tie-break normal a 7
+    M.inTB = true;
+    M.tbTarget = 7;
+    M.tbIsDecider = false;
+  }
+}
+
+function setsToWin() {
+  if (cfg.format === "1set") return 1;
+  return 2; // mejor de 3: primero en llegar a 2
+}
+
+function checkMatchOrNextSet(w) {
+  if (M.sets[w] >= setsToWin()) {
+    M.finished = true;
+    return;
+  }
+  maybeStartDeciderTB();
+}
+
+/* Si estamos por empezar el set decisivo (1-1) y corresponde súper TB, lo arrancamos como TB a 10. */
+function maybeStartDeciderTB() {
+  if (!M) return;
+  const isDecider = (M.sets[0] === 1 && M.sets[1] === 1);
+  if (!isDecider) return;
+
+  const asSuperTB = (cfg.format === "3sets" && cfg.superTB);
+
+  if (asSuperTB) {
+    M.inTB = true;
+    M.tbTarget = 11;
+    M.tbIsDecider = true;
+    M.pts = [0, 0];
+    M.games = [0, 0];
+  }
+}
+
+function advanceServer() {
+  M.ringIdx = (M.ringIdx + 1) % 4;
+}
+function currentServer() {
+  const s = cfg.serveRing[M.ringIdx];
+  return s == null ? null : s;
+}
+
+/* ---------- Configuración del saque en cancha ---------- */
+/* Los slots 0 y 2 del anillo son una pareja; 1 y 3, la otra. Al elegir un
+   sacador se completa también su compañero dos turnos después. */
+function serveCandidatesForSlot(idx) {
+  const assigned = [];
+  cfg.serveRing.forEach((v, i) => { if (v != null) assigned.push([i, v]); });
+  if (!assigned.length) return [0, 1, 2, 3];
+  const [j, v] = assigned[0];
+  const samePair = (j % 2) === (idx % 2);
+  const pair = samePair ? cfg.pairOf[v] : 1 - cfg.pairOf[v];
+  return cfg.pairs[pair].filter(p => !cfg.serveRing.includes(p));
+}
+
+function renderServePrompt() {
+  const box = $("servePrompt");
+  if (!M || M.finished || cfg.serveRing[M.ringIdx] != null) {
+    box.classList.add("hidden");
+    return;
+  }
+  const idx = M.ringIdx;
+  const cands = serveCandidatesForSlot(idx);
+  if (!cands.length) { box.classList.add("hidden"); return; }
+  const anyAssigned = cfg.serveRing.some(v => v != null);
+  $("servePromptLbl").textContent = anyAssigned
+    ? "¿Quién saca primero de " + teamLabel(cfg.pairOf[cands[0]]) + "?"
+    : "¿Quién saca primero?";
+  const seg = $("servePromptSeg");
+  seg.innerHTML = "";
+  cands.forEach(p => {
+    const b = document.createElement("button");
+    b.textContent = cfg.names[p];
+    b.addEventListener("click", () => {
+      cfg.serveRing[idx] = p;
+      cfg.serveRing[(idx + 2) % 4] = partnerOf(p);
+      renderBoard();
+    });
+    seg.appendChild(b);
+  });
+  box.classList.remove("hidden");
+}
+
+/* =========================================================================
+   SNAPSHOTS / DESHACER
+   ========================================================================= */
+function pushSnapshot() {
+  history.push(JSON.stringify({
+    pts: M.pts, games: M.games, sets: M.sets, setHistory: M.setHistory,
+    inTB: M.inTB, tbTarget: M.tbTarget, tbIsDecider: M.tbIsDecider,
+    ringIdx: M.ringIdx, stats: M.stats, seq: M.seq, log: M.log, finished: M.finished
+  }));
+  if (history.length > 400) history.shift();
+}
+
+function undo() {
+  if (!history.length) return;
+  const snap = JSON.parse(history.pop());
+  Object.assign(M, snap);
+  saveCurrent();
+  $("finishBanner").classList.add("hidden");
+  renderBoard();
+  renderStats();
+  updateUndoBtn();
+  gotoStep(1);
+}
+$("undoBtn").addEventListener("click", undo);
+function updateUndoBtn() {
+  $("undoBtn").disabled = history.length === 0;
+}
+
+/* =========================================================================
+   RENDER MARCADOR / STATS
+   ========================================================================= */
+const PT_LABEL = ["0","15","30","40","AD"];
+
+function teamLabel(pairIdx) {
+  const [a, b] = cfg.pairs[pairIdx];
+  return cfg.names[a] + " / " + cfg.names[b];
+}
+
+function renderBoard() {
+  const nSets = cfg.format === "1set" ? 1 : 3;
+  const srv = currentServer();
+  const curSet = M.setHistory.length; // índice del set en curso
+
+  // colgroup: pareja + una col por set + col del punto en curso
+  let head = '<colgroup><col class="c-team">';
+  for (let i = 0; i < nSets; i++) head += '<col>';
+  head += '<col class="c-pt"></colgroup>';
+
+  // cabecera: una columna por set (el set en curso suma sus games ahí) + punto
+  head += '<thead><tr><th class="teamh">Pareja</th>';
+  for (let i = 0; i < nSets; i++) head += '<th>Set ' + (i + 1) + '</th>';
+  head += '<th>' + (M.inTB ? (M.tbIsDecider ? "Súper TB" : "Tie-break") : "Punto") + '</th></tr></thead>';
+
+  const row = (t) => {
+    const serving = !M.finished && srv != null && cfg.pairOf[srv] === t;
+    let h = '<tr class="row' + (t === 0 ? "A" : "B") + '">' +
+            '<td class="team' + (serving ? " serving" : "") + '">' +
+            '<span class="srv">▶</span>' + esc(teamLabel(t)) + '</td>';
+    for (let i = 0; i < nSets; i++) {
+      let v = "·", cls = "set";
+      if (i < M.setHistory.length) {
+        // set cerrado: valor fijo
+        const s = M.setHistory[i];
+        v = (t === 0 ? s.a : s.b);
+        if ((t === 0 ? s.a > s.b : s.b > s.a)) cls += " won";
+      } else if (i === curSet && !M.finished) {
+        // set en curso: games acumulados (o puntos si es súper TB decisivo)
+        v = (M.inTB && M.tbIsDecider) ? M.pts[t] : M.games[t];
+        cls += " cur";
+      }
+      h += '<td class="' + cls + '">' + v + '</td>';
+    }
+    const pt = M.finished ? "" : (M.inTB ? M.pts[t] : PT_LABEL[M.pts[t]]);
+    h += '<td class="pts">' + pt + '</td></tr>';
+    return h;
+  };
+
+  $("boardTable").innerHTML = head + '<tbody>' + row(0) + row(1) + '</tbody>';
+
+  // línea de estado
+  let line = "Sets " + M.sets[0] + "–" + M.sets[1];
+  if (M.finished) {
+    line += " · Final";
+  } else if (srv != null) {
+    line += " · Saca " + esc(cfg.names[srv]);
+    if (M.inTB) line += '<span class="tbtag">' + (M.tbIsDecider ? "Súper TB" : "Tie-break") + '</span>';
+  }
+  $("setLine").innerHTML = line;
+
+  renderServePrompt();
+}
+
+function scoreOf(i) {
+  const s = M.stats[i];
+  return 2 * s.W + 1 * s.A - 1 * s.EF - 2 * s.UE;
+}
+
+function renderStats() {
+  const tb = $("statsBody");
+  tb.innerHTML = "";
+  for (let i = 0; i < 4; i++) {
+    const s = M.stats[i];
+    const tr = document.createElement("tr");
+    tr.className = cfg.pairOf[i] === 0 ? "tA" : "tB";
+    const sc = scoreOf(i);
+    tr.innerHTML =
+      '<td class="name">' + esc(cfg.names[i]) + '</td>' +
+      '<td>' + s.W + '</td><td>' + s.A + '</td><td>' + s.EF + '</td><td>' + s.UE + '</td><td>' + (s.FW || 0) + '</td>' +
+      '<td class="score" style="color:' + (sc >= 0 ? "var(--ink)" : "var(--clay)") + '">' + (sc > 0 ? "+" : "") + sc + '</td>';
+    tb.appendChild(tr);
+  }
+}
+
+/* =========================================================================
+   FINALIZAR / RESUMEN / EXPORT
+   ========================================================================= */
+function showFinishBanner() {
+  const w = M.sets[0] > M.sets[1] ? 0 : (M.sets[1] > M.sets[0] ? 1 : -1);
+  const b = $("finishBanner");
+  if (w >= 0) {
+    b.innerHTML = '<div class="ban-k">★ Ganador ★</div>' +
+                  '<div class="ban-t">Pareja ' + (w === 0 ? "A" : "B") + '</div>' +
+                  '<div class="ban-n">' + esc(teamLabel(w)) + '</div>';
+  } else {
+    b.innerHTML = '<div class="ban-t">Partido finalizado</div>';
+  }
+  b.classList.remove("hidden");
+}
+
+$("finishBtn").addEventListener("click", () => { buildSummary(); openSummary(); });
+
+function matchScoreLine() {
+  // "6-3, 4-6, 10-8"
+  const done = M.setHistory.map(s => s.a + "-" + s.b);
+  // set en curso (si tiene algo cargado y no está finalizado)
+  if (!M.finished && (M.games[0] || M.games[1] || M.pts[0] || M.pts[1])) {
+    if (M.inTB) done.push("(TB " + M.pts[0] + "-" + M.pts[1] + ")");
+    else done.push("(" + M.games[0] + "-" + M.games[1] + ")");
+  }
+  return done.join(", ");
+}
+
+function buildSummary() {
+  const lines = [];
+  // una línea por jugador: NOMBRE token token token...
+  for (let i = 0; i < 4; i++) {
+    const toks = M.seq[i].join(" ");
+    lines.push(cfg.names[i] + (toks ? " " + toks : ""));
+  }
+  lines.push("(W winner · A asistencia · EF error forzado · UE error no forzado · FW regaló un winner rival)");
+  lines.push("");
+  // secuencia cronológica agrupada por game (es el orden real de carga;
+  // el código PADEL1 de abajo re-juega exactamente esta secuencia)
+  lines.push("— SECUENCIA —");
+  let curLabel = null, buf = [];
+  const flushGame = () => { if (buf.length) lines.push(curLabel + ": " + buf.join(" · ")); buf = []; };
+  M.log.forEach(e => {
+    const p = e[0], a = e[1], q = e[2], k = e[3], setNo = e[4], gameNo = e[5], tb = e[6];
+    const label = (setNo == null) ? "?" :
+      (tb === 2 ? "S" + setNo + " Súper TB" : "S" + setNo + " G" + gameNo + (tb === 1 ? " (TB)" : ""));
+    if (label !== curLabel) { flushGame(); curLabel = label; }
+    let t = cfg.names[p] + " " + a;
+    if (q != null) {
+      if (k === "FW") t += " (regalo " + cfg.names[q] + ")";
+      else if (a === "W") t += " (asist " + cfg.names[q] + ")";
+      else t += " (prov " + cfg.names[q] + ")";
+    }
+    buf.push(t);
+  });
+  flushGame();
+  lines.push("");
+  // resumen de contribución
+  lines.push("— SCORE —");
+  for (let i = 0; i < 4; i++) {
+    const s = M.stats[i];
+    lines.push(
+      cfg.names[i] + ": W" + s.W + " A" + s.A + " EF" + s.EF + " UE" + s.UE + " FW" + (s.FW || 0) +
+      " = " + (scoreOf(i) >= 0 ? "+" : "") + scoreOf(i)
+    );
+  }
+  lines.push("");
+  lines.push("— MARCADOR —");
+  lines.push(teamLabel(0));
+  lines.push(teamLabel(1));
+  lines.push("Sets: " + M.sets[0] + "-" + M.sets[1]);
+  const ms = matchScoreLine();
+  if (ms) lines.push("Parciales: " + ms);
+  if (M.finished) {
+    const w = M.sets[0] > M.sets[1] ? 0 : 1;
+    lines.push("Ganador: Pareja " + (w === 0 ? "A" : "B") + " (" + teamLabel(w) + ")");
+  }
+  lines.push("");
+  lines.push("— CÓDIGO PARA RETOMAR —");
+  lines.push("PADEL1:" + encodeMatchCode());
+
+  $("exportText").value = lines.join("\n");
+  $("summaryTitle").textContent = M.finished ? "🏆 Resumen final" : "Resumen (en curso)";
+}
+
+/* =========================================================================
+   RETOMAR PARTIDO (código embebido en el texto copiado)
+   ========================================================================= */
+function encodeMatchCode() {
+  const payload = {
+    c: {
+      n: cfg.names, k: cfg.cats, f: cfg.format,
+      g: cfg.golden, s: cfg.superTB, r: cfg.serveRing
+    },
+    // solo los 4 campos base: set/game/tb se re-derivan al re-jugar el log
+    l: M.log.map(e => e.slice(0, 4))
+  };
+  // base64 seguro para nombres con acentos/emojis
+  return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+}
+
+function decodeMatchCode(text) {
+  const m = String(text).match(/PADEL1:([A-Za-z0-9+\/=]+)/);
+  if (!m) return null;
+  try {
+    return JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+  } catch (e) {
+    return null;
+  }
+}
+
+/* Reconstruye un partido desde un payload {c, l} (código PADEL1 o archivo local). */
+function loadMatchData(data) {
+  // reflejar la config en el setup (por si después arranca un partido nuevo)
+  for (let i = 0; i < 4; i++) {
+    $("p" + i).value = data.c.n[i] || "";
+    $("c" + i).value = (data.c.k && data.c.k[i]) || "";
+  }
+  // compatibilidad con códigos de versiones anteriores
+  let fmt = data.c.f || "3sets";
+  if (fmt === "americano") fmt = "1set";
+  if (fmt === "2sets") fmt = "3sets";
+  selectedFormat = fmt;
+  [...$("formatSeg").children].forEach(x => x.classList.toggle("on", x.dataset.fmt === selectedFormat));
+  $("fmtHelp").textContent = FMT_HELP[selectedFormat];
+  $("golden").checked = !!data.c.g;
+  $("superTB").checked = !!data.c.s;
+
+  const ring = (Array.isArray(data.c.r) && data.c.r.length === 4) ? data.c.r : [null, null, null, null];
+
+  cfg = {
+    names: data.c.n.map((n, i) => (n || "Jugador " + (i + 1))),
+    cats: data.c.k || ["", "", "", ""],
+    pairs: [[0, 1], [2, 3]],
+    pairOf: [0, 0, 1, 1],
+    format: selectedFormat,
+    golden: !!data.c.g,
+    superTB: !!data.c.s,
+    serveRing: ring,
+  };
+
+  initMatchState();
+  // re-jugar el partido punto por punto (deja el historial listo para Deshacer)
+  data.l.forEach(e => applyPoint(e[0], e[1], e[2] != null ? e[2] : null, e[3] || null));
+
+  enterMatchScreen();
+}
+
+$("resumeBtn").addEventListener("click", () => {
+  const data = decodeMatchCode($("resumeText").value);
+  if (!data || !data.c || !Array.isArray(data.l)) {
+    toast("No encontré un código PADEL1 válido 🤔");
+    return;
+  }
+  loadMatchData(data);
+  // un código pegado crea una entrada nueva en el archivo local
+  matchId = (window.PadelStore && PadelStore.ok) ? PadelStore.newId() : null;
+  saveCurrent();
+  $("resumeText").value = "";
+  toast("Partido retomado ✔");
+});
+
+function openSummary(){ $("summaryOverlay").classList.remove("hidden"); }
+function closeSummary(){ $("summaryOverlay").classList.add("hidden"); }
+$("closeSummary").addEventListener("click", closeSummary);
+
+$("copyBtn").addEventListener("click", async () => {
+  const txt = $("exportText").value;
+  let ok = false;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(txt);
+      ok = true;
+    }
+  } catch (e) { ok = false; }
+  if (!ok) {
+    // fallback
+    const ta = $("exportText");
+    ta.removeAttribute("readonly");
+    ta.select(); ta.setSelectionRange(0, txt.length);
+    try { ok = document.execCommand("copy"); } catch (e) {}
+    ta.setAttribute("readonly", "");
+  }
+  toast(ok ? "¡Copiado!" : "Copialo a mano 👆");
+});
+
+/* Modal de confirmación propio (reemplaza al confirm() nativo). */
+function doNewMatch() {
+  closeSummary();
+  matchId = null;
+  renderSavedList();
+  $("finishBanner").classList.add("hidden");
+  $("match").classList.add("hidden");
+  $("setup").classList.remove("hidden");
+  window.scrollTo(0, 0);
+}
+let confirmCb = null;
+function openConfirm(msg, sub, yesLabel, cb) {
+  $("confirmMsg").textContent = msg;
+  $("confirmSub").textContent = sub;
+  $("confirmYes").textContent = yesLabel;
+  confirmCb = cb;
+  $("confirmOverlay").classList.remove("hidden");
+}
+function closeConfirm(){ confirmCb = null; $("confirmOverlay").classList.add("hidden"); }
+$("newMatchBtn").addEventListener("click", () => openConfirm(
+  "¿Empezar un partido nuevo?",
+  "El partido actual queda guardado en el archivo de este dispositivo.",
+  "Sí, nuevo",
+  doNewMatch
+));
+$("confirmCancel").addEventListener("click", closeConfirm);
+$("confirmYes").addEventListener("click", () => {
+  const f = confirmCb;
+  closeConfirm();
+  if (f) f();
+});
+
+/* =========================================================================
+   ARCHIVO LOCAL DE PARTIDOS (PadelStore, localStorage del dispositivo)
+   ========================================================================= */
+function saveCurrent() {
+  if (!window.PadelStore || !PadelStore.ok || !matchId || !cfg || !M) return;
+  const prev = PadelStore.get(matchId);
+  PadelStore.upsert({
+    id: matchId,
+    createdAt: prev ? prev.createdAt : Date.now(),
+    updatedAt: Date.now(),
+    finished: M.finished,
+    names: cfg.names.slice(),
+    sets: [M.sets[0], M.sets[1]],
+    line: matchScoreLine(),
+    payload: {
+      c: { n: cfg.names, k: cfg.cats, f: cfg.format, g: cfg.golden, s: cfg.superTB, r: cfg.serveRing },
+      l: M.log.map(e => e.slice(0, 4))
+    }
+  });
+}
+
+function openSaved(id) {
+  const m = PadelStore.get(id);
+  if (!m || !m.payload) { toast("No pude abrir ese partido 🤔"); return; }
+  loadMatchData(m.payload);
+  matchId = id;
+  saveCurrent();
+}
+
+function renderSavedList() {
+  const card = $("savedCard");
+  if (!card) return;
+  if (!window.PadelStore || !PadelStore.ok) { card.classList.add("hidden"); return; }
+  const items = PadelStore.list();
+  card.classList.toggle("hidden", items.length === 0);
+  const box = $("savedList");
+  box.innerHTML = "";
+  items.forEach(m => {
+    const n = m.names || [];
+    const vs = (n[0] || "?") + " / " + (n[1] || "?") + " vs " + (n[2] || "?") + " / " + (n[3] || "?");
+    const div = document.createElement("div");
+    div.className = "sv-item";
+    div.innerHTML =
+      '<div class="sv-top"><span class="sv-names">' + esc(vs) + '</span>' +
+      '<span class="sv-date">' + PadelStore.fmtDate(m.updatedAt || Date.now()) + '</span></div>' +
+      '<div class="sv-line"><span class="sv-st ' + (m.finished ? "fin" : "live") + '">' + (m.finished ? "Final" : "En juego") + '</span>' +
+      'Sets ' + (m.sets ? m.sets[0] + "-" + m.sets[1] : "0-0") + (m.line ? " · " + esc(m.line) : "") + '</div>' +
+      '<div class="sv-actions">' +
+      '<button class="sv-open">' + (m.finished ? "Ver partido" : "Continuar ▶") + '</button>' +
+      '<button class="sv-del" aria-label="Borrar partido">✕</button></div>';
+    div.querySelector(".sv-open").addEventListener("click", () => openSaved(m.id));
+    div.querySelector(".sv-del").addEventListener("click", () => openConfirm(
+      "¿Borrar este partido?",
+      vs + " — se elimina del archivo de este dispositivo.",
+      "Sí, borrar",
+      () => { PadelStore.remove(m.id); renderSavedList(); toast("Partido borrado"); }
+    ));
+    box.appendChild(div);
+  });
+}
+
+renderSavedList();
+
+/* =========================================================================
+   UTILS
+   ========================================================================= */
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+}
+let toastTimer = null;
+function toast(msg) {
+  let t = document.querySelector(".toast");
+  if (!t) { t = document.createElement("div"); t.className = "toast"; document.body.appendChild(t); }
+  t.textContent = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.remove(); }, 1600);
+}
+</script>
+</body>
+</html>
