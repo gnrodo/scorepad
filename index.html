@@ -23,7 +23,7 @@
     --shadow:6px 6px 0 var(--ink);
     --shadow-sm:4px 4px 0 var(--ink);
   }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
   html,body{margin:0; padding:0;}
   html{background:var(--paper);}
   body{
@@ -170,7 +170,7 @@
   .banner .ban-n{ font-family:'Space Mono'; font-weight:700; font-size:.72rem; letter-spacing:.04em; text-transform:uppercase; margin-top:7px; }
 
   /* ---------- Marcador (héroe) ---------- */
-  .board{ border:var(--line) solid var(--ink); background:var(--paper); box-shadow:var(--shadow); margin-bottom:16px; }
+  .board{ border:var(--line) solid var(--ink); background:var(--paper); box-shadow:var(--shadow); margin-bottom:16px; position:relative; }
   .board table{ width:100%; border-collapse:collapse; table-layout:fixed; }
   .board col.c-team{ width:32%; }
   .board col.c-pt{ width:22%; }
@@ -296,6 +296,50 @@
     font-weight:700; font-size:.8rem; letter-spacing:.04em; text-transform:uppercase;
     padding:12px 20px; z-index:99; box-shadow:5px 5px 0 var(--ball);
   }
+
+  /* ---------- Lápiz: editar marcador a mano (discreto, en la esquina) ---------- */
+  .setline .score-edit{
+    margin-left:auto; flex:0 0 auto; width:30px; height:26px; min-height:0; padding:0;
+    background:transparent; color:var(--paper); border:2px solid rgba(243,244,234,.45);
+    box-shadow:none; font-size:.92rem; line-height:1; opacity:.7;
+  }
+  .setline .score-edit:active{ transform:translate(2px,2px); box-shadow:none; }
+  .setline .score-edit:focus-visible{ outline:2px solid var(--ball); outline-offset:2px; }
+
+  /* ---------- Modal editar marcador ---------- */
+  .edit-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .edit-col{ display:flex; flex-direction:column; gap:6px; }
+  .edit-team{ font-family:'Anton'; text-transform:uppercase; font-size:.92rem; letter-spacing:.02em; padding:5px 8px; background:var(--ink); color:var(--paper); text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .edit-team.b{ background:var(--ball); color:var(--ink); }
+  .edit-col .lbl{ margin-bottom:0; }
+  .edit-col input[type=number]{
+    width:100%; background:var(--paper); color:var(--ink); border:var(--line) solid var(--ink); border-radius:0;
+    padding:10px; font-family:'Space Mono', monospace; font-weight:700; font-size:1.15rem; text-align:center;
+  }
+  .edit-col input[type=number]:focus{ outline:none; box-shadow:var(--shadow-sm); }
+  .edit-col select{
+    width:100%; background:var(--paper); color:var(--ink); border:var(--line) solid var(--ink); border-radius:0;
+    padding:10px; font-family:'Space Mono', monospace; font-weight:700; font-size:1rem; text-transform:uppercase;
+  }
+  .edit-col select:focus{ outline:none; box-shadow:var(--shadow-sm); }
+  .b-apply{ background:var(--ink); color:var(--paper); font-family:'Anton'; font-size:1rem; letter-spacing:.02em; }
+
+  /* ---------- Filtro por set ---------- */
+  .setfilter-wrap{ display:flex; align-items:center; gap:10px; margin:16px 0 6px; flex-wrap:wrap; }
+  .setfilter-lbl{ font-size:.6rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--ink); }
+  .seg-filter{ display:flex; gap:6px; flex-wrap:wrap; }
+  .seg-filter button{ min-height:34px; padding:0 12px; font-family:'Space Mono', monospace; font-weight:700; font-size:.7rem; letter-spacing:.06em; box-shadow:var(--shadow-sm); }
+  .seg-filter button.on{ background:var(--ink); color:var(--paper); }
+  .seg-filter button:active{ transform:translate(3px,3px); box-shadow:0 0 0 var(--ink); }
+
+  /* ---------- Gráfico de desempeño ---------- */
+  .chart-body{ padding:12px 12px 4px; }
+  .chart-body svg{ width:100%; height:auto; display:block; }
+  .chart-empty{ font-family:'Space Mono', monospace; font-size:.72rem; color:rgba(19,47,33,.6); padding:22px 4px; text-align:center; text-transform:uppercase; letter-spacing:.06em; }
+  .chart-legend{ display:flex; flex-wrap:wrap; gap:8px 16px; justify-content:center; padding:2px 4px 12px; font-family:'Space Mono', monospace; font-size:.66rem; letter-spacing:.04em; text-transform:uppercase; }
+  .chart-legend .lg{ display:inline-flex; align-items:center; gap:5px; }
+  .chart-legend .lg .dot{ width:11px; height:11px; flex:0 0 auto; border:1.5px solid var(--ink); }
+  .chart-legend .lg b{ font-weight:700; }
 </style>
 </head>
 <body>
@@ -430,7 +474,7 @@
     <!-- marcador -->
     <div class="board">
       <table id="boardTable"></table>
-      <div class="setline"><span id="setLine"></span></div>
+      <div class="setline"><span id="setLine"></span><button id="editScoreBtn" class="score-edit" type="button" title="Editar marcador a mano" aria-label="Editar marcador a mano">✎</button></div>
     </div>
 
     <!-- configuración de saque en cancha -->
@@ -457,6 +501,12 @@
       <button class="btn-l b-finish" id="finishBtn">🏁 Finalizar</button>
     </div>
 
+    <!-- filtro por set (controla estadísticas + gráfico) -->
+    <div class="setfilter-wrap hidden" id="setFilterWrap">
+      <span class="setfilter-lbl">Filtrar por set</span>
+      <div class="seg-filter" id="setFilter"></div>
+    </div>
+
     <!-- stats colapsable -->
     <details class="stats" id="statsPanel" open>
       <summary>Estadísticas en vivo <span class="chev">▾</span></summary>
@@ -467,6 +517,13 @@
         <tbody id="statsBody"></tbody>
       </table>
       <p class="note">Score = 2·W + 1·A − 1·EF − 2·UE. FW = error forzado que regaló un winner rival (no afecta el score).</p>
+    </details>
+
+    <!-- gráfico de desempeño (momentum punto a punto) -->
+    <details class="stats chart" id="chartPanel" open>
+      <summary>Desempeño <span class="chev">▾</span></summary>
+      <div class="chart-body" id="chartBody"></div>
+      <p class="note">Índice de contribución por jugador, acumulado punto a punto (igual que el Score: Winner +2 · asistencia +1 · error forzado −1 · no forzado −2). Sube el que suma, baja el que regala. Filtrable por set; los ajustes a mano (✎) no cuentan.</p>
     </details>
   </section>
 
@@ -497,6 +554,37 @@
       <div class="controls" style="margin-top:16px">
         <button class="btn-l b-cancel" id="confirmCancel">Cancelar</button>
         <button class="btn-l b-danger" id="confirmYes">Sí, nuevo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ EDITAR MARCADOR A MANO ============ -->
+<div id="editOverlay" class="overlay hidden">
+  <div class="window" style="max-width:440px">
+    <div class="win-bar"><span>✎ Editar marcador · a mano</span><span class="dots"><i></i><i></i></span></div>
+    <div class="win-body">
+      <p class="hint" style="margin-top:0">Corregí el marcador sin sumarle winner ni errores a nadie. Útil si se perdió juego (falló la cámara, etc.).</p>
+      <div class="edit-grid">
+        <div class="edit-col">
+          <span class="edit-team" id="editTeamA">Pareja A</span>
+          <label class="lbl">Games (set actual)</label>
+          <input type="number" id="editGamesA" min="0" max="7" step="1" inputmode="numeric">
+          <label class="lbl" id="editPtLblA">Punto</label>
+          <select id="editPtsA"></select>
+        </div>
+        <div class="edit-col">
+          <span class="edit-team b" id="editTeamB">Pareja B</span>
+          <label class="lbl">Games (set actual)</label>
+          <input type="number" id="editGamesB" min="0" max="7" step="1" inputmode="numeric">
+          <label class="lbl" id="editPtLblB">Punto</label>
+          <select id="editPtsB"></select>
+        </div>
+      </div>
+      <p class="hint" id="editNote" style="margin:12px 2px 0"></p>
+      <div class="controls" style="margin-top:14px">
+        <button class="btn-l b-cancel" id="editCancel" type="button">Cancelar</button>
+        <button class="btn-l b-apply" id="editApply" type="button">Aplicar</button>
       </div>
     </div>
   </div>
@@ -595,6 +683,8 @@ function enterMatchScreen() {
   $("finishBanner").classList.add("hidden");
   renderBoard();
   renderStats();
+  renderFilter();
+  renderChart();
   updateUndoBtn();
   if (M.finished) { showFinishBanner(); gotoStep(0); }
   else gotoStep(1);
@@ -605,6 +695,7 @@ function enterMatchScreen() {
    FLUJO DE CARGA DE UN PUNTO
    ========================================================================= */
 let ui = { step: 1, player: null, action: null };
+let statFilter = 0; // 0 = todos los sets; 1..n = filtrar por ese set (stats + gráfico)
 
 function gotoStep(n) {
   ui.step = n;
@@ -727,6 +818,20 @@ function renderAssist() {
 function applyPoint(player, action, assistPlayer, assistKind) {
   pushSnapshot();
 
+  // Ajuste manual del marcador (lápiz ✎): fija games/punto SIN tocar stats de nadie.
+  // Se registra en el log como entrada especial ["EDIT", override] para que
+  // sobreviva al retomar/recargar (se re-aplica igual) y se pueda Deshacer.
+  if (player === "EDIT") {
+    const ov = action || {};
+    if (Array.isArray(ov.g)) M.games = [ov.g[0] | 0, ov.g[1] | 0];
+    if (Array.isArray(ov.p)) M.pts = [ov.p[0] | 0, ov.p[1] | 0];
+    const setNo = M.setHistory.length + 1;
+    const gameNo = M.games[0] + M.games[1] + 1;
+    const tbFlag = M.inTB ? (M.tbIsDecider ? 2 : 1) : 0;
+    M.log.push(["EDIT", ov, null, null, setNo, gameNo, tbFlag]);
+    return;
+  }
+
   // 1) stats + secuencia del jugador que definió
   M.stats[player][action] += 1;
   M.seq[player].push(action);
@@ -758,6 +863,8 @@ function commitPoint(player, action, assistPlayer, assistKind) {
 
   renderBoard();
   renderStats();
+  renderFilter();
+  renderChart();
   updateUndoBtn();
 
   if (M.finished) {
@@ -935,6 +1042,8 @@ function undo() {
   $("finishBanner").classList.add("hidden");
   renderBoard();
   renderStats();
+  renderFilter();
+  renderChart();
   updateUndoBtn();
   gotoStep(1);
 }
@@ -1004,22 +1113,28 @@ function renderBoard() {
   }
   $("setLine").innerHTML = line;
 
+  const eb = $("editScoreBtn");
+  if (eb) eb.classList.toggle("hidden", !!M.finished);
+
   renderServePrompt();
 }
 
-function scoreOf(i) {
-  const s = M.stats[i];
+function scoreVal(s) {
   return 2 * s.W + 1 * s.A - 1 * s.EF - 2 * s.UE;
+}
+function scoreOf(i) {
+  return scoreVal(M.stats[i]);
 }
 
 function renderStats() {
+  const stats = computeStats(statFilter);
   const tb = $("statsBody");
   tb.innerHTML = "";
   for (let i = 0; i < 4; i++) {
-    const s = M.stats[i];
+    const s = stats[i];
     const tr = document.createElement("tr");
     tr.className = cfg.pairOf[i] === 0 ? "tA" : "tB";
-    const sc = scoreOf(i);
+    const sc = scoreVal(s);
     tr.innerHTML =
       '<td class="name">' + esc(cfg.names[i]) + '</td>' +
       '<td>' + s.W + '</td><td>' + s.A + '</td><td>' + s.EF + '</td><td>' + s.UE + '</td><td>' + (s.FW || 0) + '</td>' +
@@ -1076,6 +1191,11 @@ function buildSummary() {
     const label = (setNo == null) ? "?" :
       (tb === 2 ? "S" + setNo + " Súper TB" : "S" + setNo + " G" + gameNo + (tb === 1 ? " (TB)" : ""));
     if (label !== curLabel) { flushGame(); curLabel = label; }
+    if (p === "EDIT") {
+      const g = (a && a.g) ? a.g[0] + "-" + a.g[1] : "?";
+      buf.push("✎ ajuste manual (" + g + " games)");
+      return;
+    }
     let t = cfg.names[p] + " " + a;
     if (q != null) {
       if (k === "FW") t += " (regalo " + cfg.names[q] + ")";
@@ -1311,6 +1431,213 @@ function renderSavedList() {
 renderSavedList();
 
 /* =========================================================================
+   FILTRO POR SET · STATS POR SET · GRÁFICO DE DESEMPEÑO
+   ========================================================================= */
+/* set máximo con puntos cargados (incluye ajustes manuales) */
+function maxSet() {
+  let m = 0;
+  M.log.forEach(e => { const s = e[4]; if (typeof s === "number" && s > m) m = s; });
+  return m;
+}
+
+/* recalcula stats {W,A,EF,UE,FW} por jugador desde el log; filter=0 => todos */
+function computeStats(filter) {
+  const st = [];
+  for (let i = 0; i < 4; i++) st.push({ W:0, A:0, EF:0, UE:0, FW:0 });
+  M.log.forEach(e => {
+    const p = e[0], a = e[1], q = e[2], k = e[3], setNo = e[4];
+    if (p === "EDIT") return;                 // los ajustes a mano no suman stats
+    if (filter && setNo !== filter) return;   // filtro por set
+    if (st[p] && a in st[p]) st[p][a] += 1;
+    if (q != null && st[q]) { const kind = k || "A"; st[q][kind] = (st[q][kind] || 0) + 1; }
+  });
+  return st;
+}
+
+/* botones Todos · Set 1 · Set 2 …  (se ocultan si hay un solo set) */
+function renderFilter() {
+  const wrap = $("setFilterWrap");
+  const box = $("setFilter");
+  if (!wrap || !box) return;
+  const m = maxSet();
+  if (statFilter > m) statFilter = 0;
+  if (m < 2) { wrap.classList.add("hidden"); return; }
+  wrap.classList.remove("hidden");
+  let h = '<button type="button" data-f="0"' + (statFilter === 0 ? ' class="on"' : '') + '>Todos</button>';
+  for (let i = 1; i <= m; i++) {
+    h += '<button type="button" data-f="' + i + '"' + (statFilter === i ? ' class="on"' : '') + '>Set ' + i + '</button>';
+  }
+  box.innerHTML = h;
+}
+
+/* Índice de contribución POR JUGADOR (mismo criterio que el Score):
+   W +2 · asistencia +1 · error forzado −1 · error no forzado −2 · FW 0.
+   4 líneas (una por jugador) acumuladas punto a punto, estilo "Contribution Index". */
+const PLAYER_COLORS = ["#132f21", "#3c7d4e", "#b04a2b", "#8f7a00"];
+
+function renderChart() {
+  const box = $("chartBody");
+  if (!box) return;
+  const WGT = { W: 2, A: 1, EF: -1, UE: -2, FW: 0 };
+  const acc = [0, 0, 0, 0];
+  const steps = [];        // steps[t] = [v0,v1,v2,v3] acumulado tras el punto t
+  const dividers = [];
+  let lastSet = null;
+  M.log.forEach(e => {
+    const setNo = e[4];
+    if (statFilter && setNo !== statFilter) return;
+    if (e[0] === "EDIT") return;             // el ajuste a mano no aporta contribución
+    if (statFilter === 0 && lastSet !== null && setNo !== lastSet) {
+      dividers.push({ at: steps.length, set: setNo });
+    }
+    lastSet = setNo;
+    const p = e[0], a = e[1], q = e[2], k = e[3];
+    acc[p] += (WGT[a] || 0);
+    if (q != null) acc[q] += (WGT[k || "A"] || 0);
+    steps.push(acc.slice());
+  });
+  if (steps.length === 0) {
+    box.innerHTML = '<div class="chart-empty">Todavía no hay puntos cargados</div>';
+    return;
+  }
+  box.innerHTML = buildLegend() + buildChartSVG(steps, dividers);
+}
+
+function buildLegend() {
+  let h = '<div class="chart-legend">';
+  for (let i = 0; i < 4; i++) {
+    h += '<span class="lg"><span class="dot" style="background:' + PLAYER_COLORS[i] + '"></span><b>' + esc(cfg.names[i]) + '</b></span>';
+  }
+  return h + '</div>';
+}
+
+function buildChartSVG(steps, dividers) {
+  const W = 520, H = 190, padL = 26, padR = 12, padT = 14, padB = 16;
+  const n = steps.length;
+  let mn = 0, mx = 0;
+  steps.forEach(s => s.forEach(v => { if (v < mn) mn = v; if (v > mx) mx = v; }));
+  if (mn === mx) { mn -= 1; mx += 1; }
+  const marg = Math.max(1, Math.round((mx - mn) * 0.08));
+  mn -= marg; mx += marg;
+  const x = (i) => padL + (n <= 1 ? (W - padL - padR) / 2 : i * (W - padL - padR) / (n - 1));
+  const y = (v) => padT + (mx - v) * (H - padT - padB) / (mx - mn);
+
+  // gridlines + etiquetas del eje Y (niveles redondos, con el 0 marcado)
+  let grid = "";
+  niceTicks(mn, mx).forEach(t => {
+    const yy = y(t).toFixed(1);
+    const strong = (t === 0);
+    grid += '<line x1="' + padL + '" y1="' + yy + '" x2="' + (W - padR) + '" y2="' + yy + '" stroke="' + (strong ? "rgba(19,47,33,.5)" : "rgba(19,47,33,.12)") + '" stroke-width="' + (strong ? 1.4 : 1) + '"/>';
+    grid += '<text x="' + (padL - 4) + '" y="' + (parseFloat(yy) + 3) + '" text-anchor="end" font-family="Space Mono, monospace" font-size="8.5" fill="rgba(19,47,33,.5)">' + (t > 0 ? "+" : "") + t + '</text>';
+  });
+
+  // divisores de set (línea vertical tipo la naranja de la referencia)
+  let divs = "";
+  dividers.forEach(d => {
+    const xd = x(d.at).toFixed(1);
+    divs += '<line x1="' + xd + '" y1="' + padT + '" x2="' + xd + '" y2="' + (H - padB) + '" stroke="#b04a2b" stroke-width="1.6" stroke-dasharray="4 3" opacity=".8"/>';
+    divs += '<text x="' + (parseFloat(xd) + 3) + '" y="' + (padT + 8) + '" font-family="Space Mono, monospace" font-weight="700" font-size="9" fill="#b04a2b">S' + d.set + '</text>';
+  });
+
+  // una línea por jugador + punto final marcado
+  let lines = "";
+  for (let i = 0; i < 4; i++) {
+    let d = "";
+    steps.forEach((s, t) => { d += (t ? " L" : "M") + x(t).toFixed(1) + " " + y(s[i]).toFixed(1); });
+    lines += '<path d="' + d + '" fill="none" stroke="' + PLAYER_COLORS[i] + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity=".92"/>';
+    lines += '<circle cx="' + x(n - 1).toFixed(1) + '" cy="' + y(steps[n - 1][i]).toFixed(1) + '" r="2.6" fill="' + PLAYER_COLORS[i] + '"/>';
+  }
+
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Índice de contribución por jugador">' +
+    grid + divs + lines + '</svg>';
+}
+
+/* niveles redondos para el eje Y, siempre incluyendo el 0 */
+function niceTicks(mn, mx) {
+  const out = [0];
+  const step = niceStep((mx - mn) / 4);
+  for (let v = step; v <= mx; v += step) out.push(v);
+  for (let v = -step; v >= mn; v -= step) out.push(v);
+  return out;
+}
+function niceStep(raw) {
+  if (raw <= 0) return 1;
+  const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+  const nn = raw / pow;
+  const nice = nn < 1.5 ? 1 : nn < 3 ? 2 : nn < 7 ? 5 : 10;
+  return Math.max(1, Math.round(nice * pow));
+}
+
+$("setFilter").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  statFilter = parseInt(b.dataset.f, 10) || 0;
+  renderFilter();
+  renderStats();
+  renderChart();
+});
+
+/* =========================================================================
+   MODAL: EDITAR MARCADOR A MANO (lápiz ✎)
+   ========================================================================= */
+function buildPtSelect(sel, cur) {
+  sel.innerHTML = "";
+  if (M.inTB) {
+    const max = Math.max(M.tbTarget + 5, cur + 3, 12);
+    for (let i = 0; i <= max; i++) {
+      const o = document.createElement("option");
+      o.value = i; o.textContent = i; if (i === cur) o.selected = true;
+      sel.appendChild(o);
+    }
+  } else {
+    const labels = cfg.golden ? ["0", "15", "30", "40"] : ["0", "15", "30", "40", "AD"];
+    labels.forEach((lb, i) => {
+      const o = document.createElement("option");
+      o.value = i; o.textContent = lb; if (i === cur) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+}
+
+function openEditScore() {
+  if (!M || M.finished) return;
+  $("editTeamA").textContent = "A · " + teamLabel(0);
+  $("editTeamB").textContent = "B · " + teamLabel(1);
+  $("editGamesA").value = M.games[0];
+  $("editGamesB").value = M.games[1];
+  buildPtSelect($("editPtsA"), M.pts[0]);
+  buildPtSelect($("editPtsB"), M.pts[1]);
+  const tbLbl = M.inTB ? "Puntos TB" : "Punto";
+  $("editPtLblA").textContent = tbLbl;
+  $("editPtLblB").textContent = tbLbl;
+  $("editNote").textContent = M.inTB
+    ? "Estás en " + (M.tbIsDecider ? "súper tie-break" : "tie-break") + ": el punto va como número."
+    : "No suma winner/errores. Se puede Deshacer.";
+  $("editOverlay").classList.remove("hidden");
+}
+function closeEdit() { $("editOverlay").classList.add("hidden"); }
+
+function clampInt(v, lo, hi) {
+  v = parseInt(v, 10);
+  if (isNaN(v)) v = lo;
+  return Math.max(lo, Math.min(hi, v));
+}
+
+function applyEditScore() {
+  const ga = clampInt($("editGamesA").value, 0, 7);
+  const gb = clampInt($("editGamesB").value, 0, 7);
+  const pa = parseInt($("editPtsA").value, 10) || 0;
+  const pb = parseInt($("editPtsB").value, 10) || 0;
+  closeEdit();
+  commitPoint("EDIT", { g: [ga, gb], p: [pa, pb] }, null, null);
+  toast("Marcador ajustado ✎");
+}
+
+$("editScoreBtn").addEventListener("click", openEditScore);
+$("editCancel").addEventListener("click", closeEdit);
+$("editApply").addEventListener("click", applyEditScore);
+
+/* =========================================================================
    UTILS
    ========================================================================= */
 function esc(s) {
@@ -1324,6 +1651,11 @@ function toast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.remove(); }, 1600);
 }
+
+/* Refuerzo anti-zoom en iOS Safari (gesto de pellizco). El doble-tap ya lo
+   corta touch-action:manipulation + user-scalable=no del viewport. */
+document.addEventListener("gesturestart", (e) => e.preventDefault());
+document.addEventListener("gesturechange", (e) => e.preventDefault());
 </script>
 </body>
 </html>
