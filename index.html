@@ -340,6 +340,17 @@
   .chart-legend .lg{ display:inline-flex; align-items:center; gap:5px; }
   .chart-legend .lg .dot{ width:11px; height:11px; flex:0 0 auto; border:1.5px solid var(--ink); }
   .chart-legend .lg b{ font-weight:700; }
+
+  /* ---------- Sync: compartir / seguir en vivo ---------- */
+  .b-share{ background:var(--grass); color:var(--paper); font-family:'Anton'; font-size:1rem; letter-spacing:.02em; }
+  .share-code{ font-family:'Anton'; font-size:2rem; letter-spacing:.1em; text-align:center; background:var(--ink); color:var(--paper); padding:12px 10px; margin-bottom:12px; }
+  .share-qr{ display:flex; justify-content:center; padding:4px 0 6px; }
+  .share-qr img{ width:190px; max-width:72%; height:auto; image-rendering:pixelated; border:var(--line) solid var(--ink); background:#fff; padding:6px; }
+  .spec-banner{ border:var(--line) solid var(--ink); background:var(--grass); color:var(--paper); box-shadow:var(--shadow-sm); text-align:center; padding:10px 12px; margin-bottom:14px; font-family:'Space Mono', monospace; font-weight:700; font-size:.76rem; letter-spacing:.06em; text-transform:uppercase; }
+  .spec-banner b{ letter-spacing:.12em; }
+  #watchCode{ text-transform:uppercase; }
+  .watchrow{ display:grid; grid-template-columns:1fr auto; gap:10px; }
+  .watchrow button{ min-height:0; white-space:nowrap; padding:0 16px; }
 </style>
 </head>
 <body>
@@ -456,6 +467,15 @@
       <div id="savedList"></div>
     </div>
 
+    <div class="section drop" style="animation-delay:.36s; margin-top:22px;">
+      <div class="section-head"><span class="n">05</span><span class="t">Seguir en vivo</span><span class="rule"></span></div>
+      <p class="hint">¿Alguien te pasó un código? Ponelo acá (o abrí el link/QR) para ver el partido en vivo desde otro dispositivo.</p>
+      <div class="watchrow">
+        <input type="text" id="watchCode" placeholder="PAD-XXXXXX" autocomplete="off" spellcheck="false">
+        <button class="btn-l b-finish2" id="watchBtn">👁 Ver</button>
+      </div>
+    </div>
+
     <div class="formfoot">
       <span>Rev. 2026</span>
       <span>ScorePad · Form PDL-01</span>
@@ -540,6 +560,7 @@
         <button class="btn-l b-copy" id="copyBtn">📋 Copiar texto</button>
         <button class="btn-l b-back2" id="closeSummary">Volver</button>
       </div>
+      <button class="btn-l b-share" id="shareBtn" style="width:100%; margin-top:12px">🔗 Compartir / seguir en vivo</button>
       <button class="btn-l b-new" id="newMatchBtn" style="width:100%; margin-top:12px">Nuevo partido</button>
     </div>
   </div>
@@ -590,6 +611,26 @@
   </div>
 </div>
 
+<!-- ============ COMPARTIR / SEGUIR EN VIVO ============ -->
+<div id="shareOverlay" class="overlay hidden">
+  <div class="window" style="max-width:420px">
+    <div class="win-bar"><span>🔗 Compartir · seguir en vivo</span><span class="dots"><i></i><i></i></span></div>
+    <div class="win-body">
+      <p class="hint" id="shareHint" style="margin-top:0">Subiendo el partido…</p>
+      <div id="shareResult" class="hidden">
+        <div class="share-code" id="shareCode">PAD-XXXXXX</div>
+        <div class="share-qr" id="shareQR"></div>
+        <p class="hint">Escaneá el QR o pasá el código/link. Mientras anotás, se actualiza solo para quien lo esté siguiendo.</p>
+        <div class="controls" style="margin-top:12px">
+          <button class="btn-l b-copy" id="shareCopyLink" type="button">📋 Copiar link</button>
+          <button class="btn-l b-back2" id="shareClose" type="button">Volver</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="qrcodegen.js"></script>
 <script src="store.js"></script>
 <script>
 "use strict";
@@ -1371,6 +1412,7 @@ $("confirmYes").addEventListener("click", () => {
    ARCHIVO LOCAL DE PARTIDOS (PadelStore, localStorage del dispositivo)
    ========================================================================= */
 function saveCurrent() {
+  scheduleSyncPush();   // si el partido está compartido, empuja la actualización en vivo
   if (!window.PadelStore || !PadelStore.ok || !matchId || !cfg || !M) return;
   const prev = PadelStore.get(matchId);
   PadelStore.upsert({
@@ -1636,6 +1678,158 @@ function applyEditScore() {
 $("editScoreBtn").addEventListener("click", openEditScore);
 $("editCancel").addEventListener("click", closeEdit);
 $("editApply").addEventListener("click", applyEditScore);
+
+/* =========================================================================
+   SYNC — compartir / seguir en vivo (backend Vercel + Upstash, sin login)
+   ========================================================================= */
+const SYNC_BASE = /^(127\.0\.0\.1|localhost)$/.test(location.hostname)
+  ? "http://127.0.0.1:8790"
+  : "https://scorepad-sync.vercel.app";
+
+let syncCode = null;        // código propio (owner): empuja el partido en vivo
+let spectator = false;      // true = estoy MIRANDO un partido ajeno (read-only)
+let spectatorCode = null;
+let pollTimer = null;
+let syncPushTimer = null;
+
+function currentPayload() {
+  return {
+    c: { n: cfg.names, k: cfg.cats, f: cfg.format, g: cfg.golden, s: cfg.superTB, r: cfg.serveRing },
+    l: M.log.map(e => e.slice(0, 4))
+  };
+}
+function shareLink(code) {
+  return location.origin + location.pathname + "?s=" + encodeURIComponent(code);
+}
+function renderQR(box, text) {
+  try {
+    const qr = qrcode(0, "M");
+    qr.addData(text);
+    qr.make();
+    box.innerHTML = '<img alt="QR del partido" src="' + qr.createDataURL(5, 2) + '">';
+  } catch (e) { box.textContent = text; }
+}
+
+function openShare() {
+  $("shareHint").classList.remove("hidden");
+  $("shareHint").textContent = "Subiendo el partido…";
+  $("shareResult").classList.add("hidden");
+  $("shareOverlay").classList.remove("hidden");
+}
+function closeShare() { $("shareOverlay").classList.add("hidden"); }
+
+async function shareMatch() {
+  if (!M || !cfg) return;
+  openShare();
+  try {
+    if (!syncCode) {
+      const r = await fetch(SYNC_BASE + "/api/sync", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payload: currentPayload() })
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || ("HTTP " + r.status));
+      syncCode = j.code;
+    } else {
+      await pushSyncNow();
+    }
+    $("shareHint").classList.add("hidden");
+    $("shareResult").classList.remove("hidden");
+    $("shareCode").textContent = syncCode;
+    $("shareResult").dataset.link = shareLink(syncCode);
+    renderQR($("shareQR"), shareLink(syncCode));
+  } catch (e) {
+    $("shareHint").textContent = "No pude compartir ahora 🤔 — " + (e.message || e);
+  }
+}
+
+function scheduleSyncPush() {
+  if (!syncCode || spectator) return;
+  clearTimeout(syncPushTimer);
+  syncPushTimer = setTimeout(pushSyncNow, 1200);
+}
+async function pushSyncNow() {
+  if (!syncCode || spectator) return;
+  try {
+    await fetch(SYNC_BASE + "/api/sync", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: syncCode, payload: currentPayload() })
+    });
+  } catch (e) { /* silencioso: nunca rompe el partido en curso */ }
+}
+
+async function enterSpectator(codeRaw) {
+  const code = String(codeRaw || "").trim().toUpperCase();
+  if (!code) { toast("Poné un código 🤔"); return; }
+  try {
+    const r = await fetch(SYNC_BASE + "/api/sync?code=" + encodeURIComponent(code) + "&t=" + Date.now());
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || ("HTTP " + r.status));
+    spectator = true; spectatorCode = code; syncCode = null; matchId = null;
+    loadMatchData(j.payload);
+    applySpectatorUI();
+    startPolling();
+    toast("Siguiendo en vivo 👁");
+  } catch (e) {
+    toast("No encontré ese partido 🤔");
+  }
+}
+
+function applySpectatorUI() {
+  if (!spectator) return;
+  ["stepPlayers", "stepAction", "stepAssist", "servePrompt", "stepQ"].forEach(id => {
+    const el = $(id); if (el) el.classList.add("hidden");
+  });
+  const ctrls = document.querySelector(".controls"); if (ctrls) ctrls.classList.add("hidden");
+  const eb = $("editScoreBtn"); if (eb) eb.classList.add("hidden");
+  let ban = $("specBanner");
+  if (!ban) {
+    ban = document.createElement("div");
+    ban.id = "specBanner"; ban.className = "spec-banner";
+    const match = $("match");
+    match.insertBefore(ban, match.children[1]);
+  }
+  ban.classList.remove("hidden");
+  ban.innerHTML = '👁 Siguiendo en vivo · <b>' + esc(spectatorCode) + '</b>';
+}
+
+function startPolling() {
+  clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    if (!spectator) return;
+    try {
+      const r = await fetch(SYNC_BASE + "/api/sync?code=" + encodeURIComponent(spectatorCode) + "&t=" + Date.now());
+      if (!r.ok) return;
+      const j = await r.json();
+      const incoming = JSON.stringify(j.payload && j.payload.l);
+      const mine = JSON.stringify(M.log.map(e => e.slice(0, 4)));
+      if (incoming !== mine) {                 // solo re-render si hay puntos nuevos
+        const keep = statFilter, sy = window.scrollY;
+        loadMatchData(j.payload);
+        statFilter = keep;
+        applySpectatorUI();
+        renderFilter(); renderStats(); renderChart();
+        window.scrollTo(0, sy);
+      }
+    } catch (e) { /* silencioso */ }
+  }, 5000);
+}
+
+$("shareBtn").addEventListener("click", () => { closeSummary(); shareMatch(); });
+$("shareClose").addEventListener("click", closeShare);
+$("shareCopyLink").addEventListener("click", async () => {
+  const link = $("shareResult").dataset.link || "";
+  let ok = false;
+  try { if (navigator.clipboard) { await navigator.clipboard.writeText(link); ok = true; } } catch (e) {}
+  toast(ok ? "¡Link copiado!" : link);
+});
+$("watchBtn").addEventListener("click", () => enterSpectator($("watchCode").value));
+
+/* abrir directo con ?s=CÓDIGO -> modo espectador */
+(function () {
+  const m = location.search.match(/[?&]s=([^&]+)/);
+  if (m) enterSpectator(decodeURIComponent(m[1]));
+})();
 
 /* =========================================================================
    UTILS
