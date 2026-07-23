@@ -250,6 +250,9 @@
   .stats tr.tA td.name{ color:var(--ink); }
   .stats tr.tB td.name{ color:var(--ball-ink); }
   .stats td.score{ font-family:'Anton'; font-size:1.1rem; }
+  .stats .frac{ font-size:.6rem; opacity:.55; font-weight:700; }
+  #srvBody td.name{ font-size:.8rem; }
+  #srvBody table + table{ margin-top:12px; }
   .stats .note{ font-size:.6rem; color:rgba(19,47,33,.6); padding:9px 12px 13px; line-height:1.45; text-transform:none; }
 
   /* ---------- Ventanas (resumen / confirmar) ---------- */
@@ -536,14 +539,21 @@
         </thead>
         <tbody id="statsBody"></tbody>
       </table>
-      <p class="note">Score = 2·W + 1·A − 1·EF − 2·UE. FW = error forzado que regaló un winner rival (no afecta el score).</p>
+      <p class="note">Score = 2·W + 1·A − 1·EF − 2·UE − 1·FW. FW = error forzado que regaló un winner rival.</p>
     </details>
 
     <!-- gráfico de desempeño (momentum punto a punto) -->
     <details class="stats chart" id="chartPanel" open>
       <summary>Desempeño <span class="chev">▾</span></summary>
       <div class="chart-body" id="chartBody"></div>
-      <p class="note">Índice de contribución por jugador, acumulado punto a punto (igual que el Score: Winner +2 · asistencia +1 · error forzado −1 · no forzado −2). Sube el que suma, baja el que regala. Filtrable por set; los ajustes a mano (✎) no cuentan.</p>
+      <p class="note">Índice de contribución por jugador, acumulado punto a punto (igual que el Score: Winner +2 · asistencia +1 · error forzado −1 · no forzado −2 · FW −1). Sube el que suma, baja el que regala. Filtrable por set; los ajustes a mano (✎) no cuentan.</p>
+    </details>
+
+    <!-- saque/resto + puntos calientes (derivado del marcador y el anillo de saque) -->
+    <details class="stats" id="srvPanel" open>
+      <summary>Saque · Resto · Calientes <span class="chev">▾</span></summary>
+      <div id="srvBody"></div>
+      <p class="note">Derivado del marcador y el orden de saque, sin anotar nada extra. Caliente = punto que podía cerrar un game, set o tie-break (incluye puntos de oro y break points). En el tie-break el saque sigue la rotación oficial (1 saque y después de a 2).</p>
     </details>
   </section>
 
@@ -725,7 +735,7 @@ function enterMatchScreen() {
   renderBoard();
   renderStats();
   renderFilter();
-  renderChart();
+  renderChart(); renderSrvStats();
   updateUndoBtn();
   if (M.finished) { showFinishBanner(); gotoStep(0); }
   else gotoStep(1);
@@ -821,10 +831,10 @@ function renderAssist() {
     $("stepQ").textContent = "¿Cómo se generó el winner?";
     const partner = cfg.pairs[cfg.pairOf[ui.player]].find(p => p !== ui.player);
     candidates.push({ p: partner, kind: "A", sub: "+1 asistencia" });
-    // error forzado del rival que dejó la pelota fácil (ej: globo corto); no afecta el score
+    // error forzado del rival que dejó la pelota fácil (ej: globo corto); resta 1 al score
     const rivalPair = 1 - cfg.pairOf[ui.player];
     cfg.pairs[rivalPair].forEach(p =>
-      candidates.push({ p, kind: "FW", sub: "La dejó fácil (no resta)" }));
+      candidates.push({ p, kind: "FW", sub: "La dejó fácil (−1)" }));
   } else if (ui.action === "EF") {
     $("stepQ").textContent = "¿Quién provocó el error forzado?";
     const rivalPair = 1 - cfg.pairOf[ui.player];
@@ -855,7 +865,7 @@ function renderAssist() {
    REGISTRO + MARCADOR
    ========================================================================= */
 /* aplica un punto al estado (sin renderizar); assistKind: "A" asistencia real (+1)
-   o "FW" error forzado del rival que regaló el winner (solo registro, no afecta score) */
+   o "FW" error forzado del rival que regaló el winner (resta 1 al score) */
 function applyPoint(player, action, assistPlayer, assistKind) {
   pushSnapshot();
 
@@ -905,7 +915,7 @@ function commitPoint(player, action, assistPlayer, assistKind) {
   renderBoard();
   renderStats();
   renderFilter();
-  renderChart();
+  renderChart(); renderSrvStats();
   updateUndoBtn();
 
   if (M.finished) {
@@ -1084,7 +1094,7 @@ function undo() {
   renderBoard();
   renderStats();
   renderFilter();
-  renderChart();
+  renderChart(); renderSrvStats();
   updateUndoBtn();
   gotoStep(1);
 }
@@ -1161,7 +1171,7 @@ function renderBoard() {
 }
 
 function scoreVal(s) {
-  return 2 * s.W + 1 * s.A - 1 * s.EF - 2 * s.UE;
+  return 2 * s.W + 1 * s.A - 1 * s.EF - 2 * s.UE - 1 * (s.FW || 0);
 }
 function scoreOf(i) {
   return scoreVal(M.stats[i]);
@@ -1182,6 +1192,124 @@ function renderStats() {
       '<td class="score" style="color:' + (sc >= 0 ? "var(--ink)" : "var(--clay)") + '">' + (sc > 0 ? "+" : "") + sc + '</td>';
     tb.appendChild(tr);
   }
+}
+
+/* =========================================================================
+   SAQUE / RESTO + PUNTOS CALIENTES (derivados del log, sin anotación extra)
+   ========================================================================= */
+/* Replay del log: reconstruye marcador y anillo de saque para etiquetar cada
+   punto con su sacador y si era "caliente" (podía cerrar un game, set o TB;
+   incluye punto de oro y break points). La rotación DENTRO del tie-break no
+   se anota en vivo: se deriva con la regla oficial (abre el que seguía en el
+   anillo y después sacan de a dos). Los ajustes ✎ se re-aplican como en vivo. */
+function annotateLog() {
+  const out = [];
+  let pts = [0, 0], games = [0, 0], sets = [0, 0];
+  let inTB = false, tbTarget = 7, tbIsDecider = false;
+  let ringIdx = 0, tbK = 0;
+  const need = (cfg.format === "1set") ? 1 : 2;
+
+  function hotNow() {
+    if (inTB) return (pts[0] >= tbTarget - 1 && pts[0] > pts[1]) ||
+                     (pts[1] >= tbTarget - 1 && pts[1] > pts[0]);
+    if (cfg.golden) return pts[0] === 3 || pts[1] === 3;
+    return (pts[0] >= 3 && pts[0] > pts[1]) || (pts[1] >= 3 && pts[1] > pts[0]);
+  }
+  function serverNow() {
+    if (inTB) {
+      const turn = Math.floor((tbK + 1) / 2);
+      return cfg.serveRing[(ringIdx + turn) % 4];
+    }
+    return cfg.serveRing[ringIdx];
+  }
+  function nextSetOrTB() {
+    if (sets[0] >= need || sets[1] >= need) return;
+    if (sets[0] === 1 && sets[1] === 1 && cfg.format === "3sets" && cfg.superTB) {
+      inTB = true; tbTarget = 11; tbIsDecider = true; tbK = 0;
+      pts = [0, 0]; games = [0, 0];
+    }
+  }
+  function award(w) {
+    const l = 1 - w;
+    if (inTB) {
+      pts[w] += 1; tbK += 1;
+      if (pts[w] >= tbTarget && pts[w] - pts[l] >= 2) {
+        sets[w] += 1;
+        pts = [0, 0]; games = [0, 0];
+        inTB = false; tbIsDecider = false;
+        ringIdx = (ringIdx + 1) % 4;
+        nextSetOrTB();
+      }
+      return;
+    }
+    pts[w] += 1;
+    const winsGame = cfg.golden ? pts[w] >= 4 : (pts[w] >= 4 && pts[w] - pts[l] >= 2);
+    if (winsGame) {
+      games[w] += 1; pts = [0, 0];
+      ringIdx = (ringIdx + 1) % 4;
+      if (games[w] >= 6 && games[w] - games[l] >= 2) {
+        sets[w] += 1; games = [0, 0];
+        nextSetOrTB();
+      } else if (games[0] === 6 && games[1] === 6) {
+        inTB = true; tbTarget = 7; tbIsDecider = false; tbK = 0;
+      }
+    } else if (!cfg.golden && pts[w] === 4 && pts[l] === 4) {
+      pts = [3, 3]; // vuelta a deuce
+    }
+  }
+
+  M.log.forEach(e => {
+    if (e[0] === "EDIT") {
+      const ov = e[1] || {};
+      if (Array.isArray(ov.g)) games = [ov.g[0] | 0, ov.g[1] | 0];
+      if (Array.isArray(ov.p)) pts = [ov.p[0] | 0, ov.p[1] | 0];
+      return;
+    }
+    const wp = (e[1] === "W") ? cfg.pairOf[e[0]] : 1 - cfg.pairOf[e[0]];
+    out.push({ setNo: e[4], srv: serverNow(), hot: hotNow(), wp });
+    award(wp);
+  });
+  return out;
+}
+
+/* % de puntos ganados al saque / al resto y calientes por pareja, más el
+   detalle por sacador. Respeta el filtro por set. */
+function renderSrvStats() {
+  const box = $("srvBody");
+  if (!box) return;
+  const rows = annotateLog().filter(x => !statFilter || x.setNo === statFilter);
+  const srvWon = [0, 0], srvTot = [0, 0], hotWon = [0, 0];
+  let hotTot = 0;
+  const byP = [[0, 0], [0, 0], [0, 0], [0, 0]]; // [ganados, sacados] por jugador
+  rows.forEach(x => {
+    if (x.srv != null) {
+      const sp = cfg.pairOf[x.srv];
+      srvTot[sp] += 1;
+      byP[x.srv][1] += 1;
+      if (x.wp === sp) { srvWon[sp] += 1; byP[x.srv][0] += 1; }
+    }
+    if (x.hot) { hotTot += 1; hotWon[x.wp] += 1; }
+  });
+  const pct = (w, t) => t ? Math.round(100 * w / t) + "%" : "—";
+  const frac = (w, t) => t ? ' <span class="frac">' + w + "/" + t + "</span>" : "";
+  const pairName = t => esc(cfg.names[cfg.pairs[t][0]]) + " / " + esc(cfg.names[cfg.pairs[t][1]]);
+  let h = '<table><thead><tr><th class="l">Pareja</th><th>Al saque</th><th>Al resto</th><th>Calientes</th></tr></thead><tbody>';
+  for (let t = 0; t < 2; t++) {
+    const o = 1 - t;
+    const retWon = srvTot[o] - srvWon[o]; // ganados restando = perdidos por el saque rival
+    h += '<tr class="' + (t === 0 ? "tA" : "tB") + '"><td class="name">' + pairName(t) + '</td>' +
+      '<td>' + pct(srvWon[t], srvTot[t]) + frac(srvWon[t], srvTot[t]) + '</td>' +
+      '<td>' + pct(retWon, srvTot[o]) + frac(retWon, srvTot[o]) + '</td>' +
+      '<td>' + pct(hotWon[t], hotTot) + frac(hotWon[t], hotTot) + '</td></tr>';
+  }
+  h += '</tbody></table>';
+  h += '<table><thead><tr><th class="l">Sacando…</th><th>Puntos ganados con su saque</th></tr></thead><tbody>';
+  for (let i = 0; i < 4; i++) {
+    h += '<tr class="' + (cfg.pairOf[i] === 0 ? "tA" : "tB") + '"><td class="name">' + esc(cfg.names[i]) + '</td>' +
+      '<td>' + pct(byP[i][0], byP[i][1]) + frac(byP[i][0], byP[i][1]) + '</td></tr>';
+  }
+  h += '</tbody></table>';
+  box.innerHTML = h;
 }
 
 /* =========================================================================
@@ -1513,14 +1641,14 @@ function renderFilter() {
 }
 
 /* Índice de contribución POR JUGADOR (mismo criterio que el Score):
-   W +2 · asistencia +1 · error forzado −1 · error no forzado −2 · FW 0.
+   W +2 · asistencia +1 · error forzado −1 · error no forzado −2 · FW −1.
    4 líneas (una por jugador) acumuladas punto a punto, estilo "Contribution Index". */
 const PLAYER_COLORS = ["#132f21", "#3c7d4e", "#b04a2b", "#8f7a00"];
 
 function renderChart() {
   const box = $("chartBody");
   if (!box) return;
-  const WGT = { W: 2, A: 1, EF: -1, UE: -2, FW: 0 };
+  const WGT = { W: 2, A: 1, EF: -1, UE: -2, FW: -1 };
   const acc = [0, 0, 0, 0];
   const steps = [];        // steps[t] = [v0,v1,v2,v3] acumulado tras el punto t
   const dividers = [];
@@ -1616,7 +1744,7 @@ $("setFilter").addEventListener("click", (e) => {
   statFilter = parseInt(b.dataset.f, 10) || 0;
   renderFilter();
   renderStats();
-  renderChart();
+  renderChart(); renderSrvStats();
 });
 
 /* =========================================================================
@@ -1808,7 +1936,7 @@ function startPolling() {
         loadMatchData(j.payload);
         statFilter = keep;
         applySpectatorUI();
-        renderFilter(); renderStats(); renderChart();
+        renderFilter(); renderStats(); renderChart(); renderSrvStats();
         window.scrollTo(0, sy);
       }
     } catch (e) { /* silencioso */ }
