@@ -549,11 +549,11 @@
       <p class="note">Índice de contribución por jugador, acumulado punto a punto (igual que el Score: Winner +2 · asistencia +1 · error forzado −1 · no forzado −2 · FW −1). Sube el que suma, baja el que regala. Filtrable por set; los ajustes a mano (✎) no cuentan.</p>
     </details>
 
-    <!-- saque/resto + puntos calientes (derivado del marcador y el anillo de saque) -->
+    <!-- saque/resto + keypoints (derivado del marcador y el anillo de saque) -->
     <details class="stats" id="srvPanel" open>
-      <summary>Saque · Resto · Calientes <span class="chev">▾</span></summary>
+      <summary>Saque · Resto · Keypoints <span class="chev">▾</span></summary>
       <div id="srvBody"></div>
-      <p class="note">Derivado del marcador y el orden de saque, sin anotar nada extra. Caliente = punto que podía cerrar un game, set o tie-break (incluye puntos de oro y break points). En el tie-break el saque sigue la rotación oficial (1 saque y después de a 2).</p>
+      <p class="note">Derivado del marcador y el orden de saque, sin anotar nada extra. Keypoint = punto que podía cerrar un game, set o tie-break (incluye puntos de oro y break points). En el tie-break el saque sigue la rotación oficial (1 saque y después de a 2).</p>
     </details>
   </section>
 
@@ -1195,10 +1195,10 @@ function renderStats() {
 }
 
 /* =========================================================================
-   SAQUE / RESTO + PUNTOS CALIENTES (derivados del log, sin anotación extra)
+   SAQUE / RESTO + KEYPOINTS (derivados del log, sin anotación extra)
    ========================================================================= */
 /* Replay del log: reconstruye marcador y anillo de saque para etiquetar cada
-   punto con su sacador y si era "caliente" (podía cerrar un game, set o TB;
+   punto con su sacador y si era "keypoint" (podía cerrar un game, set o TB;
    incluye punto de oro y break points). La rotación DENTRO del tie-break no
    se anota en vivo: se deriva con la regla oficial (abre el que seguía en el
    anillo y después sacan de a dos). Los ajustes ✎ se re-aplican como en vivo. */
@@ -1272,7 +1272,7 @@ function annotateLog() {
   return out;
 }
 
-/* % de puntos ganados al saque / al resto y calientes por pareja, más el
+/* % de puntos ganados al saque / al resto y keypoints por pareja, más el
    detalle por sacador. Respeta el filtro por set. */
 function renderSrvStats() {
   const box = $("srvBody");
@@ -1293,7 +1293,7 @@ function renderSrvStats() {
   const pct = (w, t) => t ? Math.round(100 * w / t) + "%" : "—";
   const frac = (w, t) => t ? ' <span class="frac">' + w + "/" + t + "</span>" : "";
   const pairName = t => esc(cfg.names[cfg.pairs[t][0]]) + " / " + esc(cfg.names[cfg.pairs[t][1]]);
-  let h = '<table><thead><tr><th class="l">Pareja</th><th>Al saque</th><th>Al resto</th><th>Calientes</th></tr></thead><tbody>';
+  let h = '<table><thead><tr><th class="l">Pareja</th><th>Al saque</th><th>Al resto</th><th>Keypoints</th></tr></thead><tbody>';
   for (let t = 0; t < 2; t++) {
     const o = 1 - t;
     const retWon = srvTot[o] - srvWon[o]; // ganados restando = perdidos por el saque rival
