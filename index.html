@@ -135,7 +135,8 @@
   /* ---------- Formato ---------- */
   .seg{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .seg button{ min-height:56px; font-family:'Anton'; font-size:1.05rem; letter-spacing:.03em; }
-  .seg button.on{ background:var(--ink); color:var(--paper); }
+  .seg button.on{ background:var(--grass); color:var(--paper); border-color:var(--ink); }
+  .seg button:not(.on){ color:var(--ink); opacity:1; }
   .fmthelp{ font-size:.66rem; color:rgba(19,47,33,.65); margin:8px 2px 16px; line-height:1.45; text-transform:none; }
   .hint{ font-size:.66rem; color:rgba(19,47,33,.6); margin:0 2px 12px; line-height:1.45; }
 
@@ -147,10 +148,14 @@
   }
   .toggle .t-label{ font-family:'Anton'; text-transform:uppercase; font-size:1rem; letter-spacing:.02em; }
   .toggle .t-sub{ font-size:.64rem; color:rgba(19,47,33,.62); margin-top:4px; line-height:1.35; text-transform:none; }
-  .tsw{ position:relative; width:64px; height:34px; flex:0 0 auto; border:var(--line) solid var(--ink); background:var(--paper); }
-  .tsw input{ position:absolute; inset:0; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; }
-  .tsw .knob{ position:absolute; top:0; left:0; width:28px; height:100%; background:var(--ink); transition:transform .09s steps(2,end), background .09s; }
-  .tsw input:checked + .knob{ transform:translateX(30px); background:var(--grass); }
+  .tsw{ position:relative; width:78px; height:36px; flex:0 0 auto; border:var(--line) solid var(--ink); background:var(--paper2); box-shadow:var(--shadow-sm); overflow:hidden; transition:background .12s; }
+  .tsw input{ position:absolute; inset:0; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; z-index:3; }
+  .tsw .knob{ position:absolute; top:0; left:0; width:34px; height:100%; background:var(--ink); z-index:2; display:flex; align-items:center; justify-content:center; transition:transform .12s steps(3,end); }
+  .tsw .knob::after{ content:"NO"; font-family:'Anton'; font-size:.7rem; letter-spacing:.05em; color:var(--paper); }
+  .tsw input:checked + .knob{ transform:translateX(38px); }
+  .tsw input:checked + .knob::after{ content:"SÍ"; }
+  .tsw:has(input:checked){ background:var(--grass); }
+  .tsw input:focus-visible + .knob{ outline:3px solid var(--ball); outline-offset:-3px; }
 
   /* ---------- CTA principal ---------- */
   .btn-primary{ background:var(--ink); color:var(--paper); font-family:'Anton'; font-size:1.45rem; letter-spacing:.03em; min-height:74px; flex-direction:row; gap:12px; }
@@ -336,7 +341,6 @@
   .edit-names input:focus{ outline:none; box-shadow:var(--shadow-sm); }
   .edit-names input:nth-child(1), .edit-names input:nth-child(2){ border-left:6px solid var(--ink); }
   .edit-names input:nth-child(3), .edit-names input:nth-child(4){ border-left:6px solid var(--ball); }
-  #editServeSeg button.on{ background:var(--ink); color:var(--paper); }
 
   /* ---------- Filtro por set ---------- */
   .setfilter-wrap{ display:flex; align-items:center; gap:10px; margin:16px 0 6px; flex-wrap:wrap; }
