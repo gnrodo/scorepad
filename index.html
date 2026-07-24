@@ -135,7 +135,8 @@
   /* ---------- Formato ---------- */
   .seg{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .seg button{ min-height:56px; font-family:'Anton'; font-size:1.05rem; letter-spacing:.03em; }
-  .seg button.on{ background:var(--ink); color:var(--paper); }
+  .seg button.on{ background:var(--grass); color:var(--paper); border-color:var(--ink); }
+  .seg button:not(.on){ color:var(--ink); opacity:1; }
   .fmthelp{ font-size:.66rem; color:rgba(19,47,33,.65); margin:8px 2px 16px; line-height:1.45; text-transform:none; }
   .hint{ font-size:.66rem; color:rgba(19,47,33,.6); margin:0 2px 12px; line-height:1.45; }
 
@@ -147,10 +148,14 @@
   }
   .toggle .t-label{ font-family:'Anton'; text-transform:uppercase; font-size:1rem; letter-spacing:.02em; }
   .toggle .t-sub{ font-size:.64rem; color:rgba(19,47,33,.62); margin-top:4px; line-height:1.35; text-transform:none; }
-  .tsw{ position:relative; width:64px; height:34px; flex:0 0 auto; border:var(--line) solid var(--ink); background:var(--paper); }
-  .tsw input{ position:absolute; inset:0; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; }
-  .tsw .knob{ position:absolute; top:0; left:0; width:28px; height:100%; background:var(--ink); transition:transform .09s steps(2,end), background .09s; }
-  .tsw input:checked + .knob{ transform:translateX(30px); background:var(--grass); }
+  .tsw{ position:relative; width:78px; height:36px; flex:0 0 auto; border:var(--line) solid var(--ink); background:var(--paper2); box-shadow:var(--shadow-sm); overflow:hidden; transition:background .12s; }
+  .tsw input{ position:absolute; inset:0; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; z-index:3; }
+  .tsw .knob{ position:absolute; top:0; left:0; width:34px; height:100%; background:var(--ink); z-index:2; display:flex; align-items:center; justify-content:center; transition:transform .12s steps(3,end); }
+  .tsw .knob::after{ content:"NO"; font-family:'Anton'; font-size:.7rem; letter-spacing:.05em; color:var(--paper); }
+  .tsw input:checked + .knob{ transform:translateX(38px); }
+  .tsw input:checked + .knob::after{ content:"SÍ"; }
+  .tsw:has(input:checked){ background:var(--grass); }
+  .tsw input:focus-visible + .knob{ outline:3px solid var(--ball); outline-offset:-3px; }
 
   /* ---------- CTA principal ---------- */
   .btn-primary{ background:var(--ink); color:var(--paper); font-family:'Anton'; font-size:1.45rem; letter-spacing:.03em; min-height:74px; flex-direction:row; gap:12px; }
@@ -326,6 +331,16 @@
   }
   .edit-col select:focus{ outline:none; box-shadow:var(--shadow-sm); }
   .b-apply{ background:var(--ink); color:var(--paper); font-family:'Anton'; font-size:1rem; letter-spacing:.02em; }
+  .edit-block{ margin-top:16px; }
+  .edit-block > .lbl{ margin-bottom:8px; }
+  .edit-names{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .edit-names input{
+    width:100%; background:var(--paper); color:var(--ink); border:var(--line) solid var(--ink); border-radius:0;
+    padding:9px 10px; font-family:'Space Mono', monospace; font-weight:700; font-size:.9rem;
+  }
+  .edit-names input:focus{ outline:none; box-shadow:var(--shadow-sm); }
+  .edit-names input:nth-child(1), .edit-names input:nth-child(2){ border-left:6px solid var(--ink); }
+  .edit-names input:nth-child(3), .edit-names input:nth-child(4){ border-left:6px solid var(--ball); }
 
   /* ---------- Filtro por set ---------- */
   .setfilter-wrap{ display:flex; align-items:center; gap:10px; margin:16px 0 6px; flex-wrap:wrap; }
@@ -497,7 +512,7 @@
     <!-- marcador -->
     <div class="board">
       <table id="boardTable"></table>
-      <div class="setline"><span id="setLine"></span><button id="editScoreBtn" class="score-edit" type="button" title="Editar marcador a mano" aria-label="Editar marcador a mano">✎</button></div>
+      <div class="setline"><span id="setLine"></span><button id="editScoreBtn" class="score-edit" type="button" title="Editar nombres, saque o marcador a mano" aria-label="Editar nombres, saque o marcador a mano">✎</button></div>
     </div>
 
     <!-- configuración de saque en cancha -->
@@ -593,25 +608,46 @@
 <!-- ============ EDITAR MARCADOR A MANO ============ -->
 <div id="editOverlay" class="overlay hidden">
   <div class="window" style="max-width:440px">
-    <div class="win-bar"><span>✎ Editar marcador · a mano</span><span class="dots"><i></i><i></i></span></div>
+    <div class="win-bar"><span>✎ Editar · nombres · saque · marcador</span><span class="dots"><i></i><i></i></span></div>
     <div class="win-body">
-      <p class="hint" style="margin-top:0">Corregí el marcador sin sumarle winner ni errores a nadie. Útil si se perdió juego (falló la cámara, etc.).</p>
-      <div class="edit-grid">
-        <div class="edit-col">
-          <span class="edit-team" id="editTeamA">Pareja A</span>
-          <label class="lbl">Games (set actual)</label>
-          <input type="number" id="editGamesA" min="0" max="7" step="1" inputmode="numeric">
-          <label class="lbl" id="editPtLblA">Punto</label>
-          <select id="editPtsA"></select>
-        </div>
-        <div class="edit-col">
-          <span class="edit-team b" id="editTeamB">Pareja B</span>
-          <label class="lbl">Games (set actual)</label>
-          <input type="number" id="editGamesB" min="0" max="7" step="1" inputmode="numeric">
-          <label class="lbl" id="editPtLblB">Punto</label>
-          <select id="editPtsB"></select>
+      <p class="hint" style="margin-top:0">Corregí nombres, saque o marcador sin sumarle winner ni errores a nadie. Útil si cargaste algo mal o se perdió un juego.</p>
+
+      <div class="edit-block" style="margin-top:0">
+        <label class="lbl">Nombres</label>
+        <div class="edit-names">
+          <input type="text" id="editName0" placeholder="Jugador 1" autocomplete="off" maxlength="24">
+          <input type="text" id="editName1" placeholder="Jugador 2" autocomplete="off" maxlength="24">
+          <input type="text" id="editName2" placeholder="Jugador 3" autocomplete="off" maxlength="24">
+          <input type="text" id="editName3" placeholder="Jugador 4" autocomplete="off" maxlength="24">
         </div>
       </div>
+
+      <div class="edit-block">
+        <label class="lbl">Marcador</label>
+        <div class="edit-grid">
+          <div class="edit-col">
+            <span class="edit-team" id="editTeamA">Pareja A</span>
+            <label class="lbl">Games (set actual)</label>
+            <input type="number" id="editGamesA" min="0" max="7" step="1" inputmode="numeric">
+            <label class="lbl" id="editPtLblA">Punto</label>
+            <select id="editPtsA"></select>
+          </div>
+          <div class="edit-col">
+            <span class="edit-team b" id="editTeamB">Pareja B</span>
+            <label class="lbl">Games (set actual)</label>
+            <input type="number" id="editGamesB" min="0" max="7" step="1" inputmode="numeric">
+            <label class="lbl" id="editPtLblB">Punto</label>
+            <select id="editPtsB"></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="edit-block" id="editServeBlock">
+        <label class="lbl">Saca ahora</label>
+        <div class="seg servegrid" id="editServeSeg"></div>
+        <p class="hint" style="margin:8px 2px 0">El cambio corre de acá en adelante; los games ya jugados mantienen su sacador. Podés cambiar el saque sin seguir la rotación (p. ej. al empezar un set).</p>
+      </div>
+
       <p class="hint" id="editNote" style="margin:12px 2px 0"></p>
       <div class="controls" style="margin-top:14px">
         <button class="btn-l b-cancel" id="editCancel" type="button">Cancelar</button>
@@ -719,6 +755,11 @@ function initMatchState() {
     tbTarget: 7,
     tbIsDecider: false,    // true si el TB es el set decisivo completo
     ringIdx: 0,
+    // anillo de saque "de trabajo": arranca del inicial (cfg.serveRing) y lo
+    // mutan tanto la elección en cancha como los cambios de saque a mano.
+    // cfg.serveRing queda como el anillo INICIAL (se serializa); los cambios
+    // van al log como eventos ["SERVE", jugador] y el replay los reaplica.
+    serveRing: (cfg && Array.isArray(cfg.serveRing)) ? cfg.serveRing.slice() : [null, null, null, null],
     stats: [ {W:0,A:0,EF:0,UE:0,FW:0}, {W:0,A:0,EF:0,UE:0,FW:0}, {W:0,A:0,EF:0,UE:0,FW:0}, {W:0,A:0,EF:0,UE:0,FW:0} ],
     seq: [ [], [], [], [] ], // secuencia de tokens por jugador (orden real de carga)
     log: [],               // registro global de puntos [jugador, acción, asistente, tipo] para retomar
@@ -883,6 +924,20 @@ function applyPoint(player, action, assistPlayer, assistKind) {
     return;
   }
 
+  // Cambio de saque a mano: reescribe el anillo de trabajo desde la posición
+  // actual (el elegido saca ahora; el resto rota alternando parejas). No toca
+  // el anillo inicial ni las stats: se registra ["SERVE", jugador] para que el
+  // replay lo reaplique en el momento justo (los games previos no cambian).
+  if (player === "SERVE") {
+    const s = action | 0;
+    M.serveRing = ringSetServer(M.serveRing, M.ringIdx, s);
+    const setNo = M.setHistory.length + 1;
+    const gameNo = M.games[0] + M.games[1] + 1;
+    const tbFlag = M.inTB ? (M.tbIsDecider ? 2 : 1) : 0;
+    M.log.push(["SERVE", s, null, null, setNo, gameNo, tbFlag]);
+    return;
+  }
+
   // 1) stats + secuencia del jugador que definió
   M.stats[player][action] += 1;
   M.seq[player].push(action);
@@ -1028,8 +1083,23 @@ function advanceServer() {
   M.ringIdx = (M.ringIdx + 1) % 4;
 }
 function currentServer() {
-  const s = cfg.serveRing[M.ringIdx];
+  const s = M.serveRing[M.ringIdx];
   return s == null ? null : s;
+}
+
+/* Reescribe un anillo para que en la posición `pos` saque `s`, manteniendo la
+   rotación oficial hacia adelante: s → rival → compañero de s → compañero del
+   rival. Devuelve un anillo nuevo (no muta el original). */
+function ringSetServer(ring, pos, s) {
+  const other = 1 - cfg.pairOf[s];
+  let x = ring[(pos + 1) % 4];                       // próximo rival: se respeta si ya era del otro par
+  if (x == null || cfg.pairOf[x] !== other) x = cfg.pairs[other][0];
+  const nr = ring.slice();
+  nr[pos] = s;
+  nr[(pos + 1) % 4] = x;
+  nr[(pos + 2) % 4] = partnerOf(s);
+  nr[(pos + 3) % 4] = partnerOf(x);
+  return nr;
 }
 
 /* ---------- Configuración del saque en cancha ---------- */
@@ -1037,24 +1107,24 @@ function currentServer() {
    sacador se completa también su compañero dos turnos después. */
 function serveCandidatesForSlot(idx) {
   const assigned = [];
-  cfg.serveRing.forEach((v, i) => { if (v != null) assigned.push([i, v]); });
+  M.serveRing.forEach((v, i) => { if (v != null) assigned.push([i, v]); });
   if (!assigned.length) return [0, 1, 2, 3];
   const [j, v] = assigned[0];
   const samePair = (j % 2) === (idx % 2);
   const pair = samePair ? cfg.pairOf[v] : 1 - cfg.pairOf[v];
-  return cfg.pairs[pair].filter(p => !cfg.serveRing.includes(p));
+  return cfg.pairs[pair].filter(p => !M.serveRing.includes(p));
 }
 
 function renderServePrompt() {
   const box = $("servePrompt");
-  if (!M || M.finished || cfg.serveRing[M.ringIdx] != null) {
+  if (!M || M.finished || M.serveRing[M.ringIdx] != null) {
     box.classList.add("hidden");
     return;
   }
   const idx = M.ringIdx;
   const cands = serveCandidatesForSlot(idx);
   if (!cands.length) { box.classList.add("hidden"); return; }
-  const anyAssigned = cfg.serveRing.some(v => v != null);
+  const anyAssigned = M.serveRing.some(v => v != null);
   $("servePromptLbl").textContent = anyAssigned
     ? "¿Quién saca primero de " + teamLabel(cfg.pairOf[cands[0]]) + "?"
     : "¿Quién saca primero?";
@@ -1064,8 +1134,11 @@ function renderServePrompt() {
     const b = document.createElement("button");
     b.textContent = cfg.names[p];
     b.addEventListener("click", () => {
+      // el saque inicial va al anillo INICIAL (cfg, se serializa) y al de trabajo
       cfg.serveRing[idx] = p;
       cfg.serveRing[(idx + 2) % 4] = partnerOf(p);
+      M.serveRing[idx] = p;
+      M.serveRing[(idx + 2) % 4] = partnerOf(p);
       renderBoard();
     });
     seg.appendChild(b);
@@ -1080,7 +1153,7 @@ function pushSnapshot() {
   history.push(JSON.stringify({
     pts: M.pts, games: M.games, sets: M.sets, setHistory: M.setHistory,
     inTB: M.inTB, tbTarget: M.tbTarget, tbIsDecider: M.tbIsDecider,
-    ringIdx: M.ringIdx, stats: M.stats, seq: M.seq, log: M.log, finished: M.finished
+    ringIdx: M.ringIdx, serveRing: M.serveRing, stats: M.stats, seq: M.seq, log: M.log, finished: M.finished
   }));
   if (history.length > 400) history.shift();
 }
@@ -1207,6 +1280,7 @@ function annotateLog() {
   let pts = [0, 0], games = [0, 0], sets = [0, 0];
   let inTB = false, tbTarget = 7, tbIsDecider = false;
   let ringIdx = 0, tbK = 0;
+  let ring = cfg.serveRing.slice();   // anillo inicial; los eventos SERVE lo mutan en el punto justo
   const need = (cfg.format === "1set") ? 1 : 2;
 
   function hotNow() {
@@ -1218,9 +1292,9 @@ function annotateLog() {
   function serverNow() {
     if (inTB) {
       const turn = Math.floor((tbK + 1) / 2);
-      return cfg.serveRing[(ringIdx + turn) % 4];
+      return ring[(ringIdx + turn) % 4];
     }
-    return cfg.serveRing[ringIdx];
+    return ring[ringIdx];
   }
   function nextSetOrTB() {
     if (sets[0] >= need || sets[1] >= need) return;
@@ -1265,6 +1339,7 @@ function annotateLog() {
       if (Array.isArray(ov.p)) pts = [ov.p[0] | 0, ov.p[1] | 0];
       return;
     }
+    if (e[0] === "SERVE") { ring = ringSetServer(ring, ringIdx, e[1] | 0); return; }
     const wp = (e[1] === "W") ? cfg.pairOf[e[0]] : 1 - cfg.pairOf[e[0]];
     out.push({ setNo: e[4], srv: serverNow(), hot: hotNow(), wp });
     award(wp);
@@ -1363,6 +1438,10 @@ function buildSummary() {
     if (p === "EDIT") {
       const g = (a && a.g) ? a.g[0] + "-" + a.g[1] : "?";
       buf.push("✎ ajuste manual (" + g + " games)");
+      return;
+    }
+    if (p === "SERVE") {
+      buf.push("▶ saque → " + cfg.names[a]);
       return;
     }
     let t = cfg.names[p] + " " + a;
@@ -1656,7 +1735,7 @@ function renderChart() {
   M.log.forEach(e => {
     const setNo = e[4];
     if (statFilter && setNo !== statFilter) return;
-    if (e[0] === "EDIT") return;             // el ajuste a mano no aporta contribución
+    if (e[0] === "EDIT" || e[0] === "SERVE") return;   // ajustes a mano no aportan contribución
     if (statFilter === 0 && lastSet !== null && setNo !== lastSet) {
       dividers.push({ at: steps.length, set: setNo });
     }
@@ -1769,8 +1848,30 @@ function buildPtSelect(sel, cur) {
   }
 }
 
+let editServeSel = null;   // jugador elegido en el selector de saque del modal
+
+/* botones de saque en el modal: uno por jugador, resaltando al que saca ahora */
+function buildServeEditor() {
+  const seg = $("editServeSeg");
+  seg.innerHTML = "";
+  editServeSel = currentServer();
+  for (let i = 0; i < 4; i++) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = cfg.names[i];
+    if (i === editServeSel) b.classList.add("on");
+    b.addEventListener("click", () => {
+      editServeSel = i;
+      [...seg.children].forEach((c, j) => c.classList.toggle("on", j === i));
+    });
+    seg.appendChild(b);
+  }
+}
+
 function openEditScore() {
   if (!M || M.finished) return;
+  for (let i = 0; i < 4; i++) $("editName" + i).value = cfg.names[i];
+  buildServeEditor();
   $("editTeamA").textContent = "A · " + teamLabel(0);
   $("editTeamB").textContent = "B · " + teamLabel(1);
   $("editGamesA").value = M.games[0];
@@ -1794,13 +1895,37 @@ function clampInt(v, lo, hi) {
 }
 
 function applyEditScore() {
+  // 1) Nombres — no van al log; se reflejan en cfg y en todo lo que se renderiza.
+  const newNames = [];
+  for (let i = 0; i < 4; i++) newNames.push($("editName" + i).value.trim() || ("Jugador " + (i + 1)));
+  const namesChanged = newNames.some((n, i) => n !== cfg.names[i]);
+
+  // 2) Saque — override que corre desde el punto actual en adelante (solo si cambió).
+  const sel = editServeSel;
+  const serveChanged = (sel != null && sel !== currentServer());
+
+  // 3) Marcador — games/punto del set en curso (solo si cambió).
   const ga = clampInt($("editGamesA").value, 0, 7);
   const gb = clampInt($("editGamesB").value, 0, 7);
   const pa = parseInt($("editPtsA").value, 10) || 0;
   const pb = parseInt($("editPtsB").value, 10) || 0;
+  const scoreChanged = ga !== M.games[0] || gb !== M.games[1] || pa !== M.pts[0] || pb !== M.pts[1];
+
   closeEdit();
-  commitPoint("EDIT", { g: [ga, gb], p: [pa, pb] }, null, null);
-  toast("Marcador ajustado ✎");
+
+  if (namesChanged) cfg.names = newNames;
+  if (serveChanged) applyPoint("SERVE", sel, null, null);
+  if (scoreChanged) applyPoint("EDIT", { g: [ga, gb], p: [pa, pb] }, null, null);
+
+  saveCurrent();
+  renderBoard(); renderStats(); renderFilter(); renderChart(); renderSrvStats(); updateUndoBtn();
+  if (!M.finished) gotoStep(1);
+
+  const parts = [];
+  if (scoreChanged) parts.push("marcador");
+  if (serveChanged) parts.push("saque");
+  if (namesChanged) parts.push("nombres");
+  toast(parts.length ? "Listo: " + parts.join(" · ") + " ✎" : "Sin cambios");
 }
 
 $("editScoreBtn").addEventListener("click", openEditScore);
